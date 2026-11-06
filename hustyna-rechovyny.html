@@ -1,0 +1,1992 @@
+<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<a href="index.html" style="display:inline-block;margin:10px 0 0 0;padding:7px 14px;background:#1A2225;color:#fff;border:1px solid #6b7b80;border-radius:6px;font:600 14px/1.2 system-ui,-apple-system,Segoe UI,Arial,sans-serif;text-decoration:none">← На головну</a>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Густина речовини тіл</title>
+<style>
+/* Розкладка: сцена ліворуч, панель керування праворуч; під нею журнал, обробка й теорія на тих самих вкладках */
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --surface2: #f4f6f8; --ink: #15202b; --muted: #566472; --line: #d3dae1;
+  --brass: #d9a400; --brass-ink: #3d2d00; --accent: #8a5d00; --ok: #1d7448; --bad: #b3261e; --info: #245a9c;
+  --okbg: #e3f3ea; --badbg: #fbe7e5; --warnbg: #fff3d1; --tipbg: #e6eefb;
+  --f-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141a; --surface: #172029; --surface2: #1e2935; --ink: #e6ecf2; --muted: #9aa8b6; --line: #2b3a48;
+    --brass: #e3ad0a; --brass-ink: #261b00; --accent: #f0b429; --ok: #56c58a; --bad: #ff8f86; --info: #8db9f2;
+    --okbg: #14301f; --badbg: #3a1a18; --warnbg: #3a2f10; --tipbg: #16263d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141a; --surface: #172029; --surface2: #1e2935; --ink: #e6ecf2; --muted: #9aa8b6; --line: #2b3a48;
+  --brass: #e3ad0a; --brass-ink: #261b00; --accent: #f0b429; --ok: #56c58a; --bad: #ff8f86; --info: #8db9f2;
+  --okbg: #14301f; --badbg: #3a1a18; --warnbg: #3a2f10; --tipbg: #16263d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 40px; min-height: 100vh;
+}
+.wrap { max-width: 1560px; margin: 0 auto; }
+h1, h2, h3 { margin: 0; line-height: 1.25; text-wrap: balance; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+sub, sup { line-height: 0; }
+
+/* шапка */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; margin-bottom: 14px; }
+.kicker { font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+h1 { font-size: clamp(16px, 2.2vw, 21px); font-weight: 600; max-width: 62ch; }
+#tabs { display: flex; gap: 2px; background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+#tabs button { font: 500 13px var(--f-body); border: 0; background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 6px; cursor: pointer; }
+#tabs button:hover { color: var(--ink); }
+#tabs button.on { background: var(--brass); color: var(--brass-ink); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+
+/* дослід */
+.exp { display: grid; grid-template-columns: minmax(0, 1fr) 392px; gap: 14px; align-items: start; }
+.stage { position: relative; height: clamp(520px, calc(100vh - 118px), 880px); border-radius: 8px; overflow: hidden; background: #e9e6df; border: 1px solid var(--line); touch-action: none; }
+#gl { display: block; width: 100%; height: 100%; cursor: grab; }
+.hud { position: absolute; left: 12px; top: 10px; display: flex; flex-direction: column; gap: 2px; padding: 7px 11px; border-radius: 6px; background: rgba(21,32,43,.78); color: #fff; pointer-events: none; max-width: calc(100% - 190px); }
+.hud b { font: 500 12px var(--f-body); }
+.hud span { font: 400 11px var(--f-mono); opacity: .8; }
+.views { position: absolute; right: 10px; top: 10px; display: flex; gap: 4px; }
+.views button { font: 500 12px var(--f-body); border: 0; border-radius: 5px; padding: 6px 9px; background: rgba(21,32,43,.78); color: #fff; cursor: pointer; }
+.views button:hover { background: rgba(21,32,43,.95); }
+.loupeWrap { position: absolute; left: 10px; right: 10px; bottom: 10px; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 14px rgba(0,0,0,.28); border: 1px solid rgba(0,0,0,.25); background: #cfd5db; }
+#loupe { display: block; width: 100%; }
+.toast { position: absolute; left: 50%; top: 58px; transform: translate(-50%, -8px); max-width: min(560px, calc(100% - 24px)); padding: 9px 14px; border-radius: 6px; background: #15202b; color: #fff; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 3; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.warn { background: #7a3b00; color: #fff; } .toast.ok { background: #14532d; color: #fff; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+/* панель */
+.panel { display: flex; flex-direction: column; gap: 10px; }
+.ps { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; }
+.ps[hidden], .wp[hidden] { display: none !important; }
+.ps h2 { font: 600 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ps h3 { font: 600 12px var(--f-body); color: var(--ink); display: flex; justify-content: space-between; gap: 8px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chk { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer; }
+.chk input { margin-top: 3px; accent-color: var(--brass); }
+input[type="number"], input[type="text"], input:not([type]), select {
+  font: 500 14px var(--f-mono); background: var(--surface2); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; min-width: 0;
+}
+input[type="range"] { width: 100%; accent-color: var(--brass); }
+#variant { width: 72px; }
+.btn { font: 500 13px var(--f-body); border: 1px solid var(--line); background: var(--surface2); color: var(--ink); padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--brass); color: var(--brass-ink); border-color: transparent; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.sm { padding: 6px 9px; font-size: 12px; }
+.btn.ghost { background: transparent; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.btnrow .btn { flex: 1 1 auto; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; background: var(--surface2); padding: 3px; border-radius: 8px; border: 1px solid var(--line); }
+.seg button { font: 500 12px var(--f-body); border: 0; background: transparent; color: var(--muted); padding: 7px 2px; border-radius: 6px; cursor: pointer; }
+.seg button.on { background: var(--brass); color: var(--brass-ink); }
+#unitSeg { grid-template-columns: repeat(2, auto); width: max-content; }
+#unitSeg button { padding: 7px 14px; }
+
+.bcards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.bcard { display: grid; grid-template-columns: 26px 1fr; grid-template-rows: auto auto; gap: 1px 8px; text-align: left; border: 1px solid var(--line); background: var(--surface2); color: var(--ink); padding: 8px; border-radius: 7px; cursor: pointer; font-family: var(--f-body); }
+.bcard.on { border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass); background: var(--surface); }
+.bico { grid-row: 1 / span 2; align-self: center; width: 24px; height: 24px; position: relative; }
+.bico::before { content: ''; position: absolute; inset: 3px; }
+.bico.box::before { background: var(--c, #1c1c1f); border-radius: 2px; inset: 6px 1px; }
+.bico.cyl::before { background: var(--c, #b98550); border-radius: 4px; inset: 2px 5px; }
+.bico.tube::before { border: 4px solid var(--c, #b6bcc4); border-radius: 4px; inset: 2px 3px; }
+.bico.ball::before { background: var(--c, #8d949d); border-radius: 50%; inset: 3px; }
+.bname { font-size: 12px; font-weight: 500; line-height: 1.25; }
+.bprog { display: flex; flex-wrap: wrap; gap: 3px; }
+.pg { font: 400 10px var(--f-mono); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.pg.ok { color: var(--ok); border-color: var(--ok); }
+.pill { font: 500 12px var(--f-mono); padding: 3px 9px; border-radius: 99px; background: var(--surface2); border: 1px solid var(--line); }
+.pill.live { background: var(--warnbg); border-color: var(--brass); }
+.statrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 5px; }
+.wbtn { font: 500 12px var(--f-mono); padding: 7px 2px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface2); color: var(--ink); cursor: pointer; }
+.wbtn.mg { font-size: 11px; }
+.wbtn.on { background: var(--brass); color: var(--brass-ink); border-color: transparent; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font: 500 12px var(--f-mono); padding: 4px 8px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--line); color: var(--ink); }
+.chip.dim { cursor: pointer; font-family: var(--f-body); }
+.chip.dim.on { background: var(--brass); color: var(--brass-ink); border-color: transparent; }
+.chip.dim.off { opacity: .5; text-decoration: line-through; }
+.cnt { font: 600 10px var(--f-mono); margin-left: 4px; opacity: .75; }
+.note { font-size: 12.5px; color: var(--muted); background: var(--surface2); border-radius: 6px; padding: 8px 10px; }
+.note.warn { background: var(--warnbg); color: var(--ink); }
+.note.good { background: var(--okbg); color: var(--ink); }
+.entry { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: end; }
+.entry label { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.fb { font-size: 12.5px; min-height: 0; border-radius: 6px; }
+.fb:not(:empty) { padding: 8px 10px; background: var(--surface2); }
+.fb.ok { background: var(--okbg); } .fb.bad { background: var(--badbg); } .fb.tip { background: var(--tipbg); }
+.ok { color: var(--ok); }
+.steps-o { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 5px; }
+
+/* таблиці */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 12px; }
+.toolbar h2 { font-size: 18px; margin-right: auto; }
+.logs, .calcs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 12px; align-items: start; }
+.calcs { grid-template-columns: 1fr; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ch { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ch h3 { font-size: 14px; font-weight: 600; }
+.tag { font: 500 11px var(--f-mono); padding: 2px 8px; border-radius: 99px; background: var(--surface2); border: 1px solid var(--line); color: var(--muted); }
+.tag.ok { color: var(--ok); border-color: var(--ok); }
+.tw { overflow-x: auto; }
+table.data { border-collapse: collapse; width: 100%; font: 400 13px var(--f-mono); font-variant-numeric: tabular-nums; }
+.data th, .data td { border: 1px solid var(--line); padding: 5px 9px; text-align: right; white-space: nowrap; }
+.data th { background: var(--surface2); font: 500 12px var(--f-body); text-align: center; vertical-align: bottom; }
+.data td:first-child, .data th:first-child { text-align: center; }
+.data td.empty, .data td[colspan] { color: var(--muted); text-align: center; }
+.data tr.part td { background: var(--warnbg); }
+.data tr.sum td { background: var(--surface2); font-weight: 600; }
+.insn { display: block; font: 400 10px var(--f-body); color: var(--muted); }
+select.mini { font: 400 11px var(--f-body); padding: 2px 4px; margin-top: 2px; display: block; max-width: 100%; }
+.rowbtn { display: flex; flex-wrap: wrap; gap: 6px; }
+.calc2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; align-items: start; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 7px; font-size: 13px; }
+.steps b { font-family: var(--f-mono); font-weight: 600; }
+.final { margin: 0; font: 600 16px var(--f-mono); padding: 10px 12px; background: var(--surface2); border-left: 4px solid var(--brass); border-radius: 0 6px 6px 0; overflow-wrap: anywhere; }
+.concl { margin: 0; font-size: 13px; }
+.sumgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.stile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.stile.off { opacity: .6; }
+.sl { font-size: 12px; color: var(--muted); }
+.sv { font: 600 20px var(--f-mono); }
+.su { font: 400 11px var(--f-mono); color: var(--muted); }
+@media (max-width: 900px) { .calc2 { grid-template-columns: 1fr; } }
+
+/* теорія */
+.theory { max-width: none; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
+.theory > .wide, .theory > .twocol { grid-column: 1 / -1; }
+.theory .card { gap: 8px; }
+.theory h2 { font-size: 17px; margin-bottom: 4px; }
+.theory p, .theory li { max-width: none; margin: 0; }
+.theory ul, .theory ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.eq { font: 400 16px var(--f-body); padding: 6px 0; display: flex; flex-wrap: wrap; gap: 6px 28px; align-items: center; }
+.eq i { font-family: Georgia, 'Times New Roman', serif; }
+.frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 3px; }
+.frac > span:first-child { border-bottom: 1px solid currentColor; padding: 0 4px 1px; }
+.frac > span:last-child { padding: 1px 4px 0; }
+.ex { background: var(--surface2); border-left: 3px solid var(--brass); padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: 13px; max-width: 72ch; }
+.twocol { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+
+@media (max-width: 1020px) {
+  .exp { grid-template-columns: 1fr; }
+  .stage { height: clamp(420px, 66vh, 640px); }
+  .hud { max-width: calc(100% - 20px); top: 48px; }
+}
+@media (max-width: 520px) { .views button { padding: 6px 7px; font-size: 11px; } #tabs button { padding: 7px 9px; font-size: 12px; } .bcards { grid-template-columns: 1fr; } }
+
+img.logo { height: 44px; width: auto; display: block; flex: 0 0 auto; margin-left: auto; }
+:root[data-theme="dark"] img.logo { filter: invert(.88) hue-rotate(180deg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) img.logo { filter: invert(.88) hue-rotate(180deg); } }
+@media (max-width: 560px) { img.logo { height: 34px; } }
+
+.theory .card.wide { column-gap: 24px; }
+figure.ph { margin: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+figure.ph img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); background: var(--surface2); }
+figure.ph figcaption { font-size: 12px; color: var(--muted); }
+.pics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; align-items: start; }
+.theory .pics figure.ph img { max-height: 380px; object-fit: contain; }
+
+.theory .card.intro { grid-template-columns: minmax(0,1fr) minmax(0,360px); display: grid; align-items: center; }
+.theory .card.intro > h2 { grid-column: 1 / -1; }
+@media (max-width: 700px) { .theory .card.intro { display: flex; } }
+[hidden] { display: none !important; }
+.theory .card.intro figure.ph { grid-column: 2; grid-row: 2 / span 2; }
+.theory .card.intro > p { grid-column: 1; }
+@media (max-width: 700px) { .theory .card.intro figure.ph { order: 3; } }
+.theory .card.intro { align-items: start; align-content: start; }
+
+.bname small { font-weight: 500; color: var(--muted); }
+.specrow { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.specrow .seg { flex: 1; grid-template-columns: repeat(3, 1fr); }
+.specrow .seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.sdot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,.35); display: inline-block; }
+.specinfo { margin: 4px 0 0; font-size: 12px; }
+.bprog { align-items: flex-start; align-content: flex-start; } .bcard { align-content: center; }
+
+.camtools { position: absolute; right: 10px; top: 46px; display: flex; gap: 4px; }
+.camtools button { font: 500 12px var(--f-body); border: 0; border-radius: 5px; padding: 6px 9px; background: rgba(21,32,43,.78); color: #fff; cursor: pointer; }
+.camtools button:hover { background: rgba(21,32,43,.95); }
+.camtools button[aria-pressed="true"] { background: var(--brass); color: var(--brass-ink); }
+
+</style>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Віртуальна лабораторія · Механіка · ЛР №2</div>
+      <h1>Визначення густини речовини тіл правильної геометричної форми методом безпосередніх вимірювань</h1>
+    </div>
+    <img class="logo" alt="Логотип кафедри" src="data:image/png;base64,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" alt="Кафедра фізики та методики її навчання ТНПУ" width="568" height="155">
+    <nav id="tabs" role="tablist" aria-label="Розділи роботи">
+      <button data-t="exp" role="tab">Дослід</button>
+      <button data-t="log" role="tab">Журнал</button>
+      <button data-t="calc" role="tab">Обробка</button>
+      <button data-t="theory" role="tab">Теорія</button>
+    </nav>
+  </header>
+
+  <!-- ===== ДОСЛІД ===== -->
+  <section id="tab-exp" class="exp">
+    <div class="stage" id="stage">
+      <canvas id="gl" aria-label="3D-модель лабораторної установки"></canvas>
+      <div class="hud"><b id="hudBody">Паралелепіпед</b><span id="hudWp">Огляд лабораторії</span></div>
+      <div class="views" role="group" aria-label="Камера">
+        <button data-view="overview">Огляд</button><button data-view="scale">Терези</button><button data-view="caliper">Штангенциркуль</button><button data-view="micrometer">Мікрометр</button>
+      </div>
+      <div class="camtools" role="group" aria-label="Зсув моделі">
+        <button id="btnPan" aria-pressed="false" title="Тягніть модель мишкою (також: права кнопка, Shift + перетягування, два пальці)">✥ Зсув</button>
+        <button id="btnHome" title="Повернути вид">⟲ Вид</button>
+      </div>
+      <div class="loupeWrap" id="loupeWrap" hidden><canvas id="loupe"></canvas></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <aside class="panel">
+      <section class="ps">
+        <h2>Тіло</h2>
+        <div id="bodyCards" class="bcards"></div>
+        <div class="specrow"><span class="muted">Зразок</span><div class="seg" id="specSeg"></div></div>
+        <p class="muted specinfo" id="specInfo"></p>
+        <h2>Робоче місце</h2>
+        <div class="seg" id="wpSeg">
+          <button data-w="overview">Огляд</button><button data-w="scale">Терези</button><button data-w="caliper">Штанген&shy;циркуль</button><button data-w="micrometer">Мікро&shy;метр</button>
+        </div>
+      </section>
+
+      <section class="ps wp" id="wp-over">
+        <h2>Порядок роботи</h2>
+        <ol class="steps-o">
+          <li>Оберіть тіло й зважте його на терезах: аретир затиснуто → тіло на ліву шальку, гирі на праву → відпустити аретир.</li>
+          <li>Виміряйте всі лінійні розміри тіла штангенциркулем і мікрометром (не менше 3 разів кожен розмір, щоразу в іншому місці).</li>
+          <li>Зважування також повторіть 3 рази. Дані автоматично потрапляють у «Журнал».</li>
+          <li>На вкладці «Обробка» зведені густини, похибки за Стьюдентом і остаточний запис результату.</li>
+        </ol>
+        <p class="note">Клацання по гирі, ручці аретира, тілу або приладу в 3D-сцені працює так само, як кнопки поруч. Гирі та тіло можна перетягувати на шальки. Біля приладу рухому губку чи барабан тягніть мишкою (Shift — точніше), у лупі шкалу теж можна тягнути або крутити коліщатком. Камера: перетягування по порожньому місцю — обертання; зсув моделі — права або середня кнопка миші, Shift + перетягування, два пальці або кнопка «✥ Зсув»; масштаб — коліщатко.</p>
+        <label class="chk"><input type="checkbox" id="chkAuto"> Автоматичний відлік (значення записуються без введення)</label>
+        <label class="chk"><input type="checkbox" id="chkHint" checked> Підказки на шкалах (положення рівноваги)</label>
+        <div class="row"><label for="variant">Варіант</label><input type="number" id="variant" min="1" max="99" value="1"><button id="btnVariant" class="btn sm">Застосувати</button></div>
+        <p class="note">Варіант змінює розміри тіл (±8 %). Варіант 1 — номінальні розміри. Зміна варіанта очищає журнал.</p>
+      </section>
+
+      <section class="ps wp" id="wp-scale" hidden>
+        <div class="statrow"><span id="arrPill" class="pill">Аретир: затиснуто</span><span id="ptrTxt" class="mono">Стрілка: +0,0 под.</span></div>
+        <div class="btnrow"><button id="btnArrest" class="btn primary">Відпустити аретир</button><button id="btnPan" class="btn">Покласти тіло на ліву шальку</button></div>
+        <h3>Гирі <span class="muted" style="font-weight:400">— клік кладе на праву шальку</span></h3>
+        <div id="wGrid" class="wgrid"></div>
+        <div id="panChips" class="chips"></div>
+        <div id="balHint" class="note"></div>
+        <div class="entry"><label for="massIn">Маса тіла m, г (сума гир)</label><input id="massIn" inputmode="decimal" autocomplete="off" placeholder="наприклад 16,84"><button id="btnMass" class="btn primary">Записати</button></div>
+        <div id="massFb" class="fb" role="status"></div>
+        <p class="note">Правила: зважуване тіло — на ліву шальку, гирі — на праву й лише пінцетом; класти й знімати можна тільки на аретированих терезах.</p>
+      </section>
+
+      <section class="ps wp" id="wp-inst" hidden>
+        <div id="instTitle" class="note"></div>
+        <h3>Розмір, що вимірюється</h3>
+        <div id="dimChips" class="chips"></div>
+        <div id="instMsg" class="note warn" hidden></div>
+        <h3>Розсування губок <span id="gapVal" class="mono">0,00 мм</span></h3>
+        <input type="range" id="gapRange" min="0" max="150" step="0.05" value="0" aria-label="Розсування губок, мм">
+        <div class="btnrow" id="stepBtns"></div>
+        <div class="btnrow"><button id="btnClose" class="btn">Зімкнути на тілі</button><button id="btnOpen" class="btn">Розкрити</button><button id="btnRelocate" class="btn">Інше місце тіла</button></div>
+        <div class="entry"><label for="readIn" id="readLbl">Відлік, мм</label><input id="readIn" inputmode="decimal" autocomplete="off" placeholder="наприклад 52,05"><button id="btnRead" class="btn primary">Записати</button></div>
+        <button id="btnTip" class="btn sm ghost">Підказка: як зняти відлік</button>
+        <div id="readFb" class="fb" role="status"></div>
+      </section>
+    </aside>
+  </section>
+
+  <!-- ===== ЖУРНАЛ ===== -->
+  <section id="tab-log" hidden>
+    <div class="toolbar">
+      <h2>Результати вимірювань (таблиці 1а–4а)</h2>
+      <div class="seg" id="unitSeg"><button data-u="si">СІ: кг, м</button><button data-u="mm">г, мм</button></div>
+      <button id="btnClear" class="btn">Очистити журнал</button>
+      <span id="clearAsk" hidden>Видалити всі записи? <button id="clearYes" class="btn sm primary">Так</button> <button id="clearNo" class="btn sm">Ні</button></span>
+    </div>
+    <div id="logBody" class="logs"></div>
+  </section>
+
+  <!-- ===== ОБРОБКА ===== -->
+  <section id="tab-calc" hidden>
+    <div class="toolbar">
+      <h2>Обробка результатів (таблиці 1б–4б)</h2>
+      <label for="alphaSel">Надійна ймовірність α</label><select id="alphaSel"></select>
+    </div>
+    <div id="calcSummary"></div>
+    <div id="calcBody" class="calcs"></div>
+  </section>
+
+  <!-- ===== ТЕОРІЯ ===== -->
+  <section id="tab-theory" hidden class="theory">
+    <article class="card wide">
+      <h2>Мета та прилади</h2>
+      <p>Визначити густину речовини тіл правильної геометричної форми за результатами прямих вимірювань їхньої маси (терези) і лінійних розмірів (штангенциркуль, мікрометр); оцінити похибки; за таблицею встановити речовину.</p>
+      <p><b>Прилади й матеріали:</b> мікрометр, штангенциркуль, терези, набір тіл правильної геометричної форми.</p>
+    </article>
+
+    <article class="card wide">
+      <h2>Густина</h2>
+      <p>Густиною речовини називається відношення маси тіла до його об’єму (для однорідних тіл):</p>
+      <div class="eq"><span><i>ρ</i> = <span class="frac"><span><i>m</i></span><span><i>V</i></span></span></span><span>[<i>ρ</i>] = кг/м³</span></div>
+      <p>Питома вага <i>D</i> = <i>P</i>/<i>V</i> = <i>ρg</i> залежить від широти місця й висоти, тому на практиці користуються густиною. Об’єм тіл правильної форми обчислюють за розмірами, тому густина:</p>
+      <div class="eq">
+        <span>паралелепіпед: <i>ρ</i> = <span class="frac"><span><i>m</i></span><span><i>abc</i></span></span> (1)</span>
+        <span>циліндр: <i>ρ</i> = <span class="frac"><span>4<i>m</i></span><span>π<i>d</i>²<i>h</i></span></span> (2)</span>
+        <span>куля: <i>ρ</i> = <span class="frac"><span>6<i>m</i></span><span>π<i>d</i>³</span></span> (3)</span>
+        <span>пустотілий циліндр: <i>ρ</i> = <span class="frac"><span>4<i>m</i></span><span>π<i>h</i>(<i>d</i><sub>зов</sub>² − <i>d</i><sub>вн</sub>²)</span></span> (4)</span>
+      </div>
+    </article>
+
+    <article class="card wide">
+      <h2>Терези</h2>
+      
+      <p>Важільні терези мають рівноплечий коромисло зі сталевими призмами, що спираються на агатові пластинки; на кінцях коромисла сережками підвішені шальки. До середини коромисла прикріплена довга стрілка, кінець якої рухається по шкалі: посередині 0, ліворуч і праворуч по 10 поділок (всього 20). Аретир піднімає коромисло та шальки, коли терезами не користуються, і береже призми.</p>
+      <p>На технічних терезах зважують з точністю до 0,01 г. У наборі є гирі від 100 до 1 г і від 500 до 10 мг. Приладова похибка в моделі: δ<i>m</i> = 0,005 г (половина найменшої гирі).</p>
+      <ol>
+        <li>Відпустити аретир і перевірити справність терезів.</li>
+        <li>Якщо терези не аретировані, не можна класти на шальки чи знімати з них тіло й гирі.</li>
+        <li>Зважуване тіло класти на ліву шальку, гирі — на праву.</li>
+        <li>Гирі брати тільки пінцетом.</li>
+        <li>Закінчивши, аретирувати терези, зняти гирі й покласти їх у гнізда футляра.</li>
+      </ol>
+      <p class="ex">У моделі: масу вважають знайденою, коли стрілка коливається біля нуля (різниця мас не більша за ≈ 6 мг при чутливості 4 мг на поділку). Маса — це сума гир, що лежать на правій шальці.</p>
+    </article>
+
+    <div class="twocol">
+      <article class="card">
+        <h2>Штангенциркуль</h2>
+        <p>Штанга зі шкалою (ціна поділки 1 мм), рухома рамка з ноніусом, нижні губки (зовнішні розміри), верхні (внутрішній діаметр), глибиномір, гвинт фіксації. Ноніус підвищує точність відліку.</p>
+        <ol>
+          <li>Знайти крок ноніуса (на приладі: 0,05 мм).</li>
+          <li>Цілі міліметри — по штанзі, ліворуч від нуля ноніуса.</li>
+          <li>Соті частки — номер риски ноніуса, що збігається з рискою штанги, помножений на крок.</li>
+        </ol>
+      </article>
+      <article class="card">
+        <h2>Мікрометр</h2>
+        <p>Тіло затискають між нерухомим стержнем і торцем мікрометричного гвинта тріскачкою (головне джерело похибок — нерівномірний натиск). Крок різьби 0,5 мм, тож за один оберт барабан зміщується на 0,5 мм. Кругова шкала барабана має 50 поділок по 0,01 мм.</p>
+      </article>
+    </div>
+
+    <article class="card wide">
+      <h2>Порядок виконання</h2>
+      <ol>
+        <li>Зважити кожне тіло (прямокутний паралелепіпед, циліндр, пустотілий циліндр, куля).</li>
+        <li>Виміряти лінійні розміри, потрібні для обчислення об’ємів.</li>
+        <li>Кожен розмір виміряти не менше трьох разів, щоразу в іншому місці тіла; результати занести в таблиці 1а–4а.</li>
+        <li>За формулами (1)–(4) знайти густину в кожному рядку (<i>ρ<sub>i</sub></i>).</li>
+        <li>Результати обчислень і похибки занести в таблиці 1б–4б; за таблицею густин визначити речовину.</li>
+      </ol>
+    </article>
+
+    <article class="card wide">
+      <h2>Обробка результатів</h2>
+      <ol>
+        <li>Середнє значення: <i>ρ̄</i> = Σ<i>ρ<sub>i</sub></i>/<i>n</i>.</li>
+        <li>Абсолютні похибки окремих вимірювань Δ<i>ρ<sub>i</sub></i> = |<i>ρ̄</i> − <i>ρ<sub>i</sub></i>| та їхні квадрати.</li>
+        <li>Середня квадратична похибка середнього: <i>S<sub>ρ</sub></i> = √[Σ(Δ<i>ρ<sub>i</sub></i>)² / (<i>n</i>(<i>n</i> − 1))].</li>
+        <li>Надійна ймовірність α = 0,95; коефіцієнт Стьюдента <i>t<sub>α,n</sub></i> (Додаток 2 методички); випадкова похибка Δ<i>ρ</i> = <i>t<sub>α,n</sub></i>·<i>S<sub>ρ</sub></i>.</li>
+        <li>Систематична (приладова) похибка: δ<i>ρ</i> = <i>ρ̄</i>·√Σ(…)². Для паралелепіпеда (δ<i>m</i>/<i>m</i>)² + (δ<i>a</i>/<i>a</i>)² + (δ<i>b</i>/<i>b</i>)² + (δ<i>c</i>/<i>c</i>)²; для циліндра (δ<i>m</i>/<i>m</i>)² + (2δ<i>d</i>/<i>d</i>)² + (δ<i>h</i>/<i>h</i>)²; для кулі (δ<i>m</i>/<i>m</i>)² + (3δ<i>d</i>/<i>d</i>)²; для пустотілого циліндра (δ<i>m</i>/<i>m</i>)² + (δ<i>h</i>/<i>h</i>)² + [2<i>d</i><sub>зов</sub>δ<i>d</i><sub>зов</sub>/(<i>d</i><sub>зов</sub>² − <i>d</i><sub>вн</sub>²)]² + [2<i>d</i><sub>вн</sub>δ<i>d</i><sub>вн</sub>/(<i>d</i><sub>зов</sub>² − <i>d</i><sub>вн</sub>²)]².</li>
+        <li>Загальна похибка: σ = √(δ<i>ρ</i>² + Δ<i>ρ</i>²); відносна: <i>E</i> = σ/<i>ρ̄</i> · 100 %.</li>
+        <li>Запис: <i>ρ</i> = <i>ρ̄</i> ± σ, α = …, <i>E</i> = … %.</li>
+      </ol>
+    </article>
+</section>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script>
+'use strict';
+const STUDENT={alphas:[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.98,0.99,0.999],rows:{2:[0.16,0.33,0.51,0.73,1,1.38,2,3.1,6.3,12.7,31.8,63.7,636.6],3:[0.14,0.29,0.45,0.62,0.82,1.06,1.3,1.9,2.9,4.3,7,9.9,31.6],4:[0.14,0.28,0.42,0.58,0.77,0.98,1.3,1.6,2.4,3.2,4.5,5.8,12.9],5:[0.13,0.27,0.41,0.57,0.74,0.94,1.2,1.5,2.1,2.8,3.7,4.6,8.6],6:[0.13,0.27,0.41,0.56,0.73,0.92,1.2,1.5,2,2.6,3.4,4,6.9],7:[0.13,0.27,0.4,0.55,0.72,0.9,1.1,1.4,1.9,2.4,3.1,3.7,6],8:[0.13,0.26,0.4,0.55,0.71,0.9,1.1,1.4,1.9,2.4,3,3.5,5.4],9:[0.13,0.26,0.4,0.54,0.71,0.9,1.1,1.4,1.9,2.3,2.9,3.4,5],10:[0.13,0.26,0.4,0.54,0.7,0.88,1.1,1.4,1.8,2.3,2.8,3.3,4.8],11:[0.13,0.26,0.4,0.54,0.7,0.88,1.1,1.4,1.8,2.2,2.8,3.2,4.6],12:[0.13,0.26,0.4,0.54,0.7,0.87,1.1,1.4,1.8,2.2,2.7,3.1,4.5],13:[0.13,0.26,0.4,0.54,0.7,0.87,1.1,1.4,1.8,2.2,2.7,3.1,4.3],14:[0.13,0.26,0.39,0.54,0.69,0.87,1.1,1.4,1.8,2.2,2.7,3,4.2],15:[0.13,0.26,0.39,0.54,0.69,0.87,1.1,1.3,1.8,2.1,2.6,3,4.1],16:[0.13,0.26,0.39,0.54,0.69,0.87,1.1,1.3,1.8,2.1,2.6,2.9,4],17:[0.13,0.26,0.39,0.54,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.9,4],18:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.9,4],19:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.9,3.9],20:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.9,3.9],21:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.8,3.8],22:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.8,3.8],23:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.8,3.8],24:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2.1,2.5,2.8,3.8],25:[0.13,0.26,0.39,0.53,0.69,0.86,1.1,1.3,1.7,2,2.5,2.8,3.7],26:[0.13,0.26,0.39,0.53,0.68,0.86,1.1,1.3,1.7,2,2.5,2.8,3.7],27:[0.13,0.26,0.39,0.53,0.68,0.85,1.1,1.3,1.7,2,2.5,2.8,3.7],28:[0.13,0.26,0.39,0.53,0.68,0.85,1.1,1.3,1.7,2,2.5,2.8,3.7],29:[0.13,0.26,0.39,0.53,0.68,0.85,1.1,1.3,1.7,2,2.5,2.8,3.7],30:[0.13,0.26,0.39,0.53,0.68,0.85,1.1,1.3,1.7,2,2.5,2.8,3.7],40:[0.13,0.25,0.39,0.53,0.68,0.85,1.1,1.3,1.7,2,2.4,2.7,3.6],60:[0.13,0.25,0.39,0.53,0.68,0.85,1,1.3,1.7,2,2.4,2.7,3.5],120:[0.13,0.25,0.39,0.53,0.68,0.85,1,1.3,1.7,2,2.4,2.6,3.4],"inf":[0.13,0.25,0.39,0.52,0.67,0.84,1,1.3,1.6,2,2.3,2.6,3.3]}};
+/* ===== Дані: прилади, тіла, гирі, довідкові густини ===== */
+const INSTR = {
+  caliper:    { id: 'caliper',    name: 'Штангенциркуль', step: 0.05, delta: 0.025, max: 150, short: 'штангенциркуль' },
+  micrometer: { id: 'micrometer', name: 'Мікрометр',      step: 0.01, delta: 0.005, max: 25,  short: 'мікрометр' }
+};
+// терези: найменша гиря 10 мг → похибка 0,005 г; чутливість 4 мг/поділку (шкала −10…+10)
+const BALANCE = { delta: 0.005, mgPerDiv: 4, tol: 0.0061 };
+
+/* nom — «істинний» розмір у мм (його студент не знає), sd — розкид розміру по поверхні тіла, мм */
+const BODIES = [
+  { id: 'box',  tab: 1, name: 'Прямокутний паралелепіпед', short: 'Паралелепіпед', mat: 'ебоніт', rho: 1250,
+    dims: [ { k: 'a', sym: 'a', name: 'довжина a', nom: 52.0, sd: 0.030 },
+            { k: 'b', sym: 'b', name: 'ширина b',  nom: 19.0, sd: 0.030 },
+            { k: 'c', sym: 'c', name: 'висота c',  nom: 9.0,  sd: 0.025 } ] },
+  { id: 'cyl',  tab: 2, name: 'Циліндр', short: 'Циліндр', mat: 'дерево (бук)', rho: 700,
+    dims: [ { k: 'd', sym: 'd', name: 'діаметр d', nom: 20.0, sd: 0.040 },
+            { k: 'h', sym: 'h', name: 'висота h',  nom: 32.0, sd: 0.040 } ] },
+  { id: 'tube', tab: 3, name: 'Пустотілий циліндр', short: 'Пустотілий циліндр', mat: 'алюміній', rho: 2700,
+    dims: [ { k: 'D',  sym: 'd<sub>зов</sub>', name: 'зовнішній діаметр d_зов', nom: 30.0, sd: 0.030 },
+            { k: 'dv', sym: 'd<sub>вн</sub>',  name: 'внутрішній діаметр d_вн', nom: 28.0, sd: 0.030, inner: true },
+            { k: 'h',  sym: 'h', name: 'висота h', nom: 48.0, sd: 0.030 } ] },
+  { id: 'ball', tab: 4, name: 'Куля', short: 'Куля', mat: 'сталь', rho: 7850,
+    dims: [ { k: 'd', sym: 'd', name: 'діаметр d', nom: 16.0, sd: 0.004 } ] }
+];
+const BODY = id => BODIES.find(b => b.id === id);
+
+/* три зразки кожного тіла: інший розмір і матеріал (матеріал студент визначає за густиною) */
+const SPECS = {
+  box: [ { kind: 'ebon', mat: 'ебоніт',   rho: 1250, nom: { a: 52, b: 19, c: 9 } },
+         { kind: 'alu',  mat: 'алюміній', rho: 2700, nom: { a: 45, b: 22, c: 10 } },
+         { kind: 'cu',   mat: 'мідь',     rho: 8930, nom: { a: 30, b: 16, c: 8 } } ],
+  cyl: [ { kind: 'beech', mat: 'бук',    rho: 700,  nom: { d: 20, h: 32 } },
+         { kind: 'pine',  mat: 'сосна',  rho: 500,  nom: { d: 25, h: 40 } },
+         { kind: 'steel', mat: 'сталь',  rho: 7850, nom: { d: 12, h: 25 } } ],
+  tube: [ { kind: 'alu',   mat: 'алюміній', rho: 2700, wall: 1.0, nom: { D: 30, h: 48 } },
+          { kind: 'cu',    mat: 'мідь',     rho: 8930, wall: 1.5, nom: { D: 20, h: 40 } },
+          { kind: 'steel', mat: 'сталь',    rho: 7850, wall: 1.5, nom: { D: 24, h: 30 } } ],
+  ball: [ { kind: 'steel', mat: 'сталь',    rho: 7850, nom: { d: 16 } },
+          { kind: 'alu',   mat: 'алюміній', rho: 2700, nom: { d: 20 } },
+          { kind: 'cu',    mat: 'мідь',     rho: 8930, nom: { d: 18 } } ]
+};
+const SPEC_SIZE = (id, s) => SPECS[id][s].nom;
+/* зробити зразок s поточним для тіла id (змінює BODIES[id] «на місці») */
+function applySpec(id, s) {
+  const B = BODY(id), sp = SPECS[id][s];
+  B.spec = s; B.rho = sp.rho; B.mat = sp.mat; B.kind = sp.kind; B.wall = sp.wall || 0;
+  B.dims.forEach(d => { d.nom = d.k === 'dv' ? Math.round((sp.nom.D - 2 * sp.wall) * 100) / 100 : sp.nom[d.k]; });
+}
+BODIES.forEach(B => applySpec(B.id, 0));
+
+/* набір гир (г): 100…1 г і 500…10 мг */
+const WEIGHT_VALUES = [100, 50, 20, 20, 10, 5, 2, 2, 1, 0.5, 0.2, 0.2, 0.1, 0.05, 0.02, 0.02, 0.01];
+const wLabel = v => v >= 1 ? v + ' г' : Math.round(v * 1000) + ' мг';
+
+/* довідкові густини, кг/м³ (Додаток 7 методички, тверді тіла при 293 К) */
+const MATERIALS = [
+  { n: 'Алюміній', lo: 2695, hi: 2705, src: 'Додаток 7' },
+  { n: 'Барій',    lo: 3495, hi: 3505, src: 'Додаток 7' },
+  { n: 'Ванадій',  lo: 6015, hi: 6025, src: 'Додаток 7' },
+  { n: 'Вісмут',   lo: 9795, hi: 9805, src: 'Додаток 7' },
+  { n: 'Залізо',   lo: 7875, hi: 7885, src: 'Додаток 7' },
+  { n: 'Літій',    lo: 525,  hi: 535,  src: 'Додаток 7' },
+  { n: 'Мідь',     lo: 8925, hi: 8935, src: 'Додаток 7' },
+  { n: 'Нікель',   lo: 8895, hi: 8905, src: 'Додаток 7' },
+  { n: 'Свинець',  lo: 11250, hi: 11350, src: 'Додаток 7' },
+  { n: 'Срібло',   lo: 10450, hi: 10550, src: 'Додаток 7' },
+  { n: 'Цезій',    lo: 1895, hi: 1905, src: 'Додаток 7' },
+  { n: 'Цинк',     lo: 7145, hi: 7155, src: 'Додаток 7' },
+  // немає в Додатку 7 — загальновідомі інтервали, позначені як додаткові
+  { n: 'Сталь',          lo: 7750, hi: 7950, src: 'додатково' },
+  { n: 'Дерево (бук)',   lo: 620,  hi: 780,  src: 'додатково' },
+  { n: 'Дерево (сосна)', lo: 400,  hi: 600,  src: 'додатково' },
+  { n: 'Ебоніт',         lo: 1150, hi: 1350, src: 'додатково' }
+];
+
+const KIND_COL = { ebon: '#1c1c1f', alu: '#cfd4da', steel: '#8d949d', cu: '#c27a4a', beech: '#b98550', pine: '#e3c58f' };
+const KIND_DESC = { ebon: 'чорний матовий', alu: 'світлий матовий метал', steel: 'сталевий, з блиском', cu: 'червонуватий метал', beech: 'жовтувато-коричневе дерево', pine: 'світле дерево' };
+
+/* ===== Обчислення (без DOM) ===== */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function gauss() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+const quant = (x, step) => Math.round(x / step + 1e-9) * step;
+const r2 = x => Math.round(x * 100) / 100;
+
+/* «істинні» розміри (мм) і маси (г) для варіанта v; v=1 — номінальні значення */
+function makeVariant(v) {
+  const rnd = mulberry32(v * 7919 + 17);
+  const dims = {}, mass = {};
+  BODIES.forEach(B => {
+    const t = {};
+    B.dims.forEach(d => {
+      const f = v === 1 ? 1 : 1 + (rnd() - 0.5) * 0.16;
+      t[d.k] = r2(d.nom * f);
+    });
+    if (B.id === 'tube') {            // стінка трубки 0,6…1,4 мм
+      const w0 = B.wall || 1.0, wall = v === 1 ? w0 : r2(w0 * (0.6 + rnd() * 0.8));
+      t.dv = r2(t.D - 2 * wall);
+    }
+    dims[B.id] = t;
+    mass[B.id] = bodyMassG(B.id, t);
+  });
+  return { dims, mass };
+}
+function volumeMM3(id, t) {
+  switch (id) {
+    case 'box':  return t.a * t.b * t.c;
+    case 'cyl':  return Math.PI * t.d * t.d * t.h / 4;
+    case 'tube': return Math.PI * t.h * (t.D * t.D - t.dv * t.dv) / 4;
+    case 'ball': return Math.PI * Math.pow(t.d, 3) / 6;
+  }
+}
+function bodyMassG(id, t) {                       // ρ[кг/м³]·V[мм³] → г
+  return BODY(id).rho * volumeMM3(id, t) * 1e-6;  // кг/м³ · мм³ = 1e-9 кг = 1e-6 г
+}
+/* один відлік приладом: розмір у випадковому місці тіла + округлення до ціни поділки */
+function sampleReading(trueSize, sd, step) {
+  return quant(trueSize + sd * gauss(), step);
+}
+
+/* ---- густина (СІ) ---- */
+const DENS = {
+  box:  (m, x) => m / (x.a * x.b * x.c),
+  cyl:  (m, x) => 4 * m / (Math.PI * x.d * x.d * x.h),
+  tube: (m, x) => 4 * m / (Math.PI * x.h * (x.D * x.D - x.dv * x.dv)),
+  ball: (m, x) => 6 * m / (Math.PI * Math.pow(x.d, 3))
+};
+/* відносні внески приладових похибок: δρ/ρ = √Σ(rel²) */
+function sysTerms(id, x, dl) {
+  const t = [{ k: 'm', rel: dl.m / x.m }];
+  switch (id) {
+    case 'box':  t.push({ k: 'a', rel: dl.a / x.a }, { k: 'b', rel: dl.b / x.b }, { k: 'c', rel: dl.c / x.c }); break;
+    case 'cyl':  t.push({ k: 'd', rel: 2 * dl.d / x.d }, { k: 'h', rel: dl.h / x.h }); break;
+    case 'ball': t.push({ k: 'd', rel: 3 * dl.d / x.d }); break;
+    case 'tube': {
+      const q = x.D * x.D - x.dv * x.dv;
+      t.push({ k: 'h', rel: dl.h / x.h },
+             { k: 'D', rel: 2 * x.D * dl.D / q },
+             { k: 'dv', rel: 2 * x.dv * dl.dv / q });
+    }
+  }
+  return t;
+}
+
+/* ---- Стьюдент (Додаток 2) ---- */
+function tCoef(alpha, n) {
+  const ai = STUDENT.alphas.indexOf(alpha);
+  if (ai < 0 || n < 2) return NaN;
+  let key;
+  if (n <= 30) key = n; else if (n < 40) key = 30; else if (n < 60) key = 40; else if (n < 120) key = 60; else key = 120;
+  return STUDENT.rows[key][ai];
+}
+
+/* ---- округлення за правилами методички ---- */
+function roundHalfEven(x, dec) {
+  const m = Math.pow(10, dec), y = x * m, f = Math.floor(y), diff = y - f;
+  let r;
+  if (Math.abs(diff - 0.5) < 1e-9) r = (f % 2 === 0) ? f : f + 1; else r = Math.round(y);
+  return r / m;
+}
+/* значення і похибка в одиницях scale; похибка — 2 значущі цифри, якщо перша 1 або 2, інакше 1 */
+function roundResult(val, err, scale) {
+  const v = val / scale, e = err / scale;
+  const exp = Math.floor(Math.log10(e));
+  const first = Math.floor(e / Math.pow(10, exp) + 1e-9);
+  const sig = first <= 2 ? 2 : 1;
+  const dec = sig - 1 - exp;
+  const er = roundHalfEven(e, dec);
+  const vr = roundHalfEven(v, dec);
+  const d = Math.max(dec, 0);
+  return { v: vr.toFixed(d).replace('.', ','), e: er.toFixed(d).replace('.', ','), dec: d, vNum: vr, eNum: er };
+}
+
+/* ---- повна обробка одного тіла ---- */
+function processBody(id, rows, delta, alpha) {
+  const n = rows.length;
+  const rho = rows.map(r => DENS[id](r.m, r));
+  const mean = rho.reduce((s, x) => s + x, 0) / n;
+  const dev = rho.map(x => Math.abs(mean - x));
+  const sq = dev.map(x => x * x);
+  const sumsq = sq.reduce((s, x) => s + x, 0);
+  const avg = {};
+  Object.keys(delta).forEach(k => { avg[k] = rows.reduce((s, r) => s + r[k], 0) / n; });
+  const terms = sysTerms(id, avg, delta);
+  const sys = mean * Math.sqrt(terms.reduce((s, t) => s + t.rel * t.rel, 0));
+  const out = { n, rho, mean, dev, sq, sumsq, avg, terms, sys, alpha, S: NaN, t: NaN, rand: NaN, tot: NaN, E: NaN };
+  if (n >= 2) {
+    out.S = Math.sqrt(sumsq / (n * (n - 1)));
+    out.t = tCoef(alpha, n);
+    out.rand = out.t * out.S;
+    out.tot = Math.hypot(sys, out.rand);
+    out.E = out.tot / mean * 100;
+    out.res = roundResult(mean, out.tot, 1000);
+  }
+  return out;
+}
+/* які речовини збігаються з результатом у межах похибки */
+function matchMaterials(mean, tot) {
+  const lo = mean - tot, hi = mean + tot;
+  const hit = MATERIALS.filter(m => m.hi >= lo && m.lo <= hi);
+  const near = MATERIALS.slice().sort((p, q) =>
+    Math.abs((p.lo + p.hi) / 2 - mean) - Math.abs((q.lo + q.hi) / 2 - mean))[0];
+  return { hit, near };
+}
+
+/* ---- форматування чисел (кома, значущі цифри) ---- */
+function fx(x, d) { return Number(x).toFixed(d).replace('.', ','); }
+function fp(x, sig) {
+  sig = sig || 4;
+  if (!isFinite(x)) return '—';
+  if (x === 0) return '0';
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  const d = Math.max(0, sig - 1 - e);
+  return Number(x).toFixed(Math.min(d, 12)).replace('.', ',');
+}
+if (typeof module !== 'undefined') {
+  module.exports = { applySpec, BODIES, makeVariant, bodyMassG, processBody, roundResult, tCoef, DENS, sysTerms, matchMaterials, sampleReading, quant };
+}
+
+/* ===== 3D-сцена (Three.js r128). Одиниці сцени — сантиметри ===== */
+const S3 = {
+  ready: false, active: true, onPick: null,
+  bodies: {}, weights: {}, tweens: [],
+  bal: { arrested: true, theta: 0, omega: 0, mL: 0, mR: 0 },
+  gapCal: 0, gapMic: 0
+};
+const CAL = { x: -20, z: 24 };   // положення нуля штангенциркуля
+const MIC = { x: 6, z: 24 };     // положення ковадла мікрометра
+const PIVOT_Y = 22.0, ARM = 14.0, HANG = 17.0, POINTER_L = 15.6, DIV_CM = 0.2;
+const THETA_DIV = DIV_CM / POINTER_L;                       // рад на поділку
+const THETA_PER_G = (1000 / BALANCE.mgPerDiv) * THETA_DIV;  // рад на 1 г різниці мас
+const WP = {                                                // камера: ціль, відстань, азимут, полярний кут
+  overview:   { t: [2, 12, 6],    r: 104, th: 0, ph: 1.18 },
+  scale:      { t: [-1, 14, 0],   r: 64,  th: 0, ph: 1.34 },
+  caliper:    { t: [-12, 1, 21],  r: 25,  th: 0, ph: 0.66 },
+  micrometer: { t: [6.5, 1, 22],  r: 22,  th: 0, ph: 0.66 }
+};
+
+let renderer, scene, camera, raycaster, glCanvas, stageEl;
+const cam = { t: null, r: 100, th: 0, ph: 1.2, tween: null };
+const pickables = [];
+let M = {};
+
+/* ---------- допоміжні ---------- */
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); draw(x, w, h);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 8; return t;
+}
+function mk(geo, mat, x, y, z, parent, shadow) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x || 0, y || 0, z || 0);
+  m.castShadow = shadow !== false; m.receiveShadow = true;
+  if (parent) parent.add(m);
+  return m;
+}
+function wire(p1, p2, r, mat) {
+  const d = new THREE.Vector3().subVectors(p2, p1), len = d.length();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 6), mat);
+  m.position.copy(p1).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  m.castShadow = true; return m;
+}
+function setPick(obj, data) { obj.userData.pick = data; pickables.push(obj); }
+
+function makeMaterials() {
+  const wall = canvasTex(512, 512, (x, w, h) => {
+    x.fillStyle = '#ece9e2'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 7000; i++) {
+      const g = 190 + Math.random() * 60;
+      x.fillStyle = 'rgba(' + g + ',' + g + ',' + (g - 6) + ',0.35)';
+      x.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 5, 1 + Math.random() * 3);
+    }
+  });
+  wall.wrapS = wall.wrapT = THREE.RepeatWrapping; wall.repeat.set(5, 3);
+  const table = canvasTex(1024, 512, (x, w, h) => {
+    x.fillStyle = '#c4814f'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 260; i++) {
+      const y = Math.random() * h, a = 0.05 + Math.random() * 0.12;
+      x.strokeStyle = Math.random() < 0.5 ? 'rgba(120,60,25,' + a + ')' : 'rgba(235,170,110,' + a + ')';
+      x.lineWidth = 1 + Math.random() * 3;
+      x.beginPath(); x.moveTo(0, y);
+      x.bezierCurveTo(w * 0.3, y + (Math.random() - 0.5) * 12, w * 0.7, y + (Math.random() - 0.5) * 12, w, y + (Math.random() - 0.5) * 8);
+      x.stroke();
+    }
+  });
+  const wood = canvasTex(256, 128, (x, w, h) => {
+    x.fillStyle = '#b98550'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 90; i++) {
+      x.strokeStyle = 'rgba(' + (Math.random() < 0.5 ? '110,65,30' : '225,175,120') + ',' + (0.15 + Math.random() * 0.25) + ')';
+      x.lineWidth = 0.6 + Math.random() * 2;
+      const px = Math.random() * w; x.beginPath(); x.moveTo(px, 0); x.lineTo(px + (Math.random() - 0.5) * 6, h); x.stroke();
+    }
+  });
+  const pine = canvasTex(256, 128, (x, w, h) => {
+    x.fillStyle = '#e3c58f'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) {
+      x.strokeStyle = 'rgba(' + (Math.random() < 0.5 ? '170,115,55' : '246,222,170') + ',' + (0.15 + Math.random() * 0.25) + ')';
+      x.lineWidth = 0.6 + Math.random() * 2;
+      const px = Math.random() * w; x.beginPath(); x.moveTo(px, 0); x.lineTo(px + (Math.random() - 0.5) * 6, h); x.stroke();
+    }
+  });
+  M = {
+    pine: new THREE.MeshStandardMaterial({ map: pine, roughness: 0.8 }),
+    cu: new THREE.MeshPhongMaterial({ color: 0xc27a4a, specular: 0xffd2b0, shininess: 95, side: THREE.DoubleSide }),
+    wall: new THREE.MeshStandardMaterial({ map: wall, roughness: 1 }),
+    table: new THREE.MeshStandardMaterial({ map: table, roughness: 0.65 }),
+    base: new THREE.MeshStandardMaterial({ color: 0xece0ad, roughness: 0.8 }),
+    black: new THREE.MeshStandardMaterial({ color: 0x1b1c1f, roughness: 0.45, metalness: 0.1 }),
+    bakelite: new THREE.MeshStandardMaterial({ color: 0x25262a, roughness: 0.35 }),
+    hole: new THREE.MeshBasicMaterial({ color: 0x050506 }),
+    yellow: new THREE.MeshPhongMaterial({ color: 0xe0a700, specular: 0xffe08a, shininess: 70 }),
+    chrome: new THREE.MeshPhongMaterial({ color: 0xdfe3e8, specular: 0xffffff, shininess: 140, side: THREE.DoubleSide }),
+    steel: new THREE.MeshPhongMaterial({ color: 0xaab1ba, specular: 0xffffff, shininess: 90 }),
+    nickel: new THREE.MeshPhongMaterial({ color: 0xc9ccd1, specular: 0xffffff, shininess: 110 }),
+    dark: new THREE.MeshPhongMaterial({ color: 0x4a4e54, specular: 0x999999, shininess: 60 }),
+    white: new THREE.MeshStandardMaterial({ color: 0xf3f3ef, roughness: 0.6 }),
+    woodM: new THREE.MeshStandardMaterial({ map: wood, roughness: 0.75 }),
+    alu: new THREE.MeshPhongMaterial({ color: 0xcfd4da, specular: 0xffffff, shininess: 80, side: THREE.DoubleSide }),
+    ebon: new THREE.MeshStandardMaterial({ color: 0x1c1c1f, roughness: 0.55, metalness: 0.05 }),
+    ball: new THREE.MeshPhongMaterial({ color: 0x9aa1aa, specular: 0xffffff, shininess: 130 })
+  };
+}
+
+/* ---------- кімната ---------- */
+function buildRoom() {
+  mk(new THREE.BoxGeometry(260, 3, 110), M.table, 0, -1.5, 8, scene, false).receiveShadow = true;
+  const wall = mk(new THREE.PlaneGeometry(520, 260), M.wall, 0, 110, -26, scene, false);
+  wall.receiveShadow = true;
+  // розетка «220 V» як на фото
+  const plate = mk(new THREE.BoxGeometry(8, 9, 0.8), M.base, -62, 52, -25.4, scene, false);
+  mk(new THREE.CylinderGeometry(2, 2, 0.5, 20), M.white, -62, 49.5, -24.8, scene, false).rotation.x = Math.PI / 2;
+  mk(new THREE.CylinderGeometry(2, 2, 0.5, 20), M.white, -62, 54.8, -24.8, scene, false).rotation.x = Math.PI / 2;
+  const lab = canvasTex(128, 64, (x, w, h) => { x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.fillStyle = '#222'; x.font = 'bold 34px sans-serif'; x.textAlign = 'center'; x.fillText('220 V', w / 2, 44); });
+  const l = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 2.2), new THREE.MeshBasicMaterial({ map: lab }));
+  l.position.set(-62, 57.5, -24.98); scene.add(l);
+}
+
+/* ---------- терези ВА-200 ---------- */
+function buildBalance() {
+  const g = new THREE.Group(); scene.add(g); S3.balG = g;
+  mk(new THREE.BoxGeometry(42, 1.4, 22), M.base, 0, 1.5, 0, g);
+  [[-17, 8], [17, 8], [0, -8]].forEach(p => mk(new THREE.CylinderGeometry(1, 1.2, 0.8, 20), M.black, p[0], 0.4, p[1], g));
+  // чашка під колонкою, колонка
+  mk(new THREE.CylinderGeometry(3.3, 3.5, 2.3, 32), M.black, 0, 3.35, 0, g);
+  mk(new THREE.CylinderGeometry(1, 1, 16.1, 24), M.yellow, 0, 12.55, 0, g);
+  mk(new THREE.BoxGeometry(8, 0.8, 3.2), M.black, 0, 21.0, 0, g);
+  [-9.5, 9.5].forEach(x => mk(new THREE.CylinderGeometry(0.35, 0.35, 1.4, 10), M.chrome, x, 21.9, 0, g));
+  // шкала стрілки
+  const sc = canvasTex(480, 160, (x, w, h) => {
+    x.fillStyle = '#f7f7f4'; x.fillRect(0, 0, w, h); x.strokeStyle = '#111'; x.fillStyle = '#111'; x.textAlign = 'center';
+    for (let i = -10; i <= 10; i++) {
+      const px = 240 + i * 20, len = i % 5 === 0 ? 70 : 42; x.lineWidth = i === 0 ? 4 : 2;
+      x.beginPath(); x.moveTo(px, 4); x.lineTo(px, 4 + len); x.stroke();
+      if (i % 5 === 0) { x.font = 'bold 30px sans-serif'; x.fillText(String(Math.abs(i)), px, 125); }
+    }
+  });
+  mk(new THREE.BoxGeometry(4.8, 1.1, 0.8), M.black, 0, 5.05, 2.6, g);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 1.6), new THREE.MeshBasicMaterial({ map: sc }));
+  plate.position.set(0, PIVOT_Y - POINTER_L, 3.02); g.add(plate);
+  mk(new THREE.BoxGeometry(4.8, 1.6, 0.4), M.white, 0, PIVOT_Y - POINTER_L, 2.8, g);
+
+  // коромисло
+  const beam = new THREE.Group(); beam.position.set(0, PIVOT_Y, 0); g.add(beam); S3.beam = beam;
+  mk(new THREE.BoxGeometry(30, 0.9, 2.6), M.black, 0, 0, 0, beam);
+  const sh = new THREE.Shape();
+  sh.moveTo(-14.5, 0); sh.lineTo(-10.2, 0); sh.absarc(-7, 0, 3.2, Math.PI, 0, true);
+  sh.lineTo(3.8, 0); sh.absarc(7, 0, 3.2, Math.PI, 0, true); sh.lineTo(14.5, 0);
+  sh.lineTo(14.5, 4.0); sh.lineTo(-14.5, 4.0); sh.lineTo(-14.5, 0);
+  const plateGeo = new THREE.ExtrudeGeometry(sh, { depth: 0.25, bevelEnabled: false });
+  mk(plateGeo, M.yellow, 0, 0.45, -0.125, beam);
+  const ruler = canvasTex(1450, 200, (x, w, h) => {
+    x.clearRect(0, 0, w, h); x.strokeStyle = '#3a2a00'; x.fillStyle = '#3a2a00'; x.textAlign = 'center';
+    for (let i = -10; i <= 10; i++) {
+      const px = w / 2 + i * 62; x.lineWidth = 3; x.beginPath(); x.moveTo(px, 4); x.lineTo(px, i % 5 === 0 ? 46 : 30); x.stroke();
+      if (i % 2 === 0) { x.font = 'bold 26px sans-serif'; x.fillText(String(Math.abs(i)), px, 80); }
+    }
+  });
+  const rp = new THREE.Mesh(new THREE.PlaneGeometry(29, 4), new THREE.MeshBasicMaterial({ map: ruler, transparent: true }));
+  rp.position.set(0, 0.45 + 2.0, 0.14); beam.add(rp);
+  [-1, 1].forEach(s => {
+    mk(new THREE.BoxGeometry(1.2, 2.2, 2.4), M.black, s * 14.6, 0.5, 0, beam);
+    const nd = mk(new THREE.CylinderGeometry(0.12, 0.12, 5, 8), M.steel, s * 16.7, 1.4, 0, beam); nd.rotation.z = Math.PI / 2;
+    mk(new THREE.BoxGeometry(0.5, 0.5, 0.5), M.steel, s * 15.6, 1.4, 0, beam);
+  });
+  mk(new THREE.BoxGeometry(0.2, 0.2, 3.4), M.steel, 0, -0.2, 1.7, beam);
+  mk(new THREE.CylinderGeometry(0.07, 0.04, POINTER_L, 8), M.steel, 0, -POINTER_L / 2 - 0.2, 3.35, beam);
+
+  // ручка аретира (спереду по центру)
+  const kn = new THREE.Group(); kn.position.set(0, 2.3, 11.9); g.add(kn); S3.knob = kn;
+  const kb = mk(new THREE.CylinderGeometry(2.0, 2.2, 1.7, 28), M.black, 0, 0, 0, kn); kb.rotation.x = Math.PI / 2;
+  mk(new THREE.BoxGeometry(0.5, 3.4, 0.3), M.dark, 0, 0, 0.9, kn);
+  setPick(kn, { type: 'arrest' });
+
+  // шальки
+  S3.pan = [];
+  [-1, 1].forEach((s, i) => {
+    const p = new THREE.Group(); scene.add(p); S3.pan[i] = p;
+    const prof = [[0, 0], [4.9, 0], [5.7, 0.3], [5.9, 1.0], [5.7, 1.05], [5.5, 0.5], [0, 0.25]].map(a => new THREE.Vector2(a[0], a[1]));
+    mk(new THREE.LatheGeometry(prof, 40), M.chrome, 0, -HANG, 0, p);
+    p.add(wire(new THREE.Vector3(-5.4, -HANG + 1, 0), new THREE.Vector3(0, 0, 0), 0.07, M.steel));
+    p.add(wire(new THREE.Vector3(5.4, -HANG + 1, 0), new THREE.Vector3(0, 0, 0), 0.07, M.steel));
+    mk(new THREE.TorusGeometry(0.28, 0.07, 8, 14), M.steel, 0, 0.25, 0, p);
+  });
+  S3.panFloor = -HANG + 0.25;
+}
+
+/* ---------- гирі ---------- */
+function knobGeo(r, h) {
+  const p = [[0, 0], [r, 0], [r, h * 0.32], [r * 0.72, h * 0.42], [r * 0.36, h * 0.5], [r * 0.34, h * 0.72],
+    [r * 0.58, h * 0.8], [r * 0.6, h * 0.95], [r * 0.4, h], [0, h]].map(a => new THREE.Vector2(a[0], a[1]));
+  return new THREE.LatheGeometry(p, 28);
+}
+const KNOB = { 100: [1.6, 2.6], 50: [1.3, 2.2], 20: [1.0, 1.8], 10: [0.85, 1.6], 5: [0.7, 1.4], 2: [0.55, 1.2], 1: [0.45, 1.0] };
+const PLATE = { 0.5: 1.5, 0.2: 1.25, 0.1: 1.1, 0.05: 0.95, 0.02: 0.8, 0.01: 0.7 };
+
+function buildCase() {
+  const cg = new THREE.Group(); cg.position.set(-33, 0, 3); scene.add(cg); S3.caseG = cg;
+  mk(new THREE.BoxGeometry(21, 3.2, 12), M.bakelite, 0, 1.6, 0, cg);
+  const lid = new THREE.Group(); lid.position.set(0, 3.2, -5.6); lid.rotation.x = -0.2; cg.add(lid);
+  mk(new THREE.BoxGeometry(21, 7.5, 0.8), M.bakelite, 0, 3.75, 0, lid);
+  mk(new THREE.BoxGeometry(14, 4.5, 0.1), M.hole, 0, 3.0, 0.45, lid);
+  // розкладка гнізд
+  const rows = [
+    { z: -3.3, ids: [0, 1, 2, 3, 4] },
+    { z: 0.2, ids: [5, 6, 7, 8] },
+    { z: 3.4, ids: [9, 10, 11, 12, 13, 14, 15, 16] }
+  ];
+  rows.forEach(row => {
+    const size = row.ids.map(i => { const v = WEIGHT_VALUES[i]; return v >= 1 ? KNOB[v][0] * 2 : PLATE[v]; });
+    const total = size.reduce((a, b) => a + b, 0) + 0.5 * (size.length - 1);
+    let x = -total / 2;
+    row.ids.forEach((id, j) => {
+      const cx = x + size[j] / 2; x += size[j] + 0.5;
+      const v = WEIGHT_VALUES[id];
+      const wg = new THREE.Group();
+      if (v >= 1) {
+        const k = KNOB[v];
+        mk(new THREE.CylinderGeometry(k[0] + 0.14, k[0] + 0.14, 0.06, 24), M.hole, cx, 3.23, row.z, cg, false);
+        mk(knobGeo(k[0], k[1]), M.nickel, 0, 0, 0, wg);
+      } else {
+        const s = PLATE[v];
+        mk(new THREE.BoxGeometry(s + 0.25, 0.06, s * 0.8 + 0.25), M.hole, cx, 3.23, row.z, cg, false);
+        mk(new THREE.BoxGeometry(s, 0.07, s * 0.8), M.nickel, 0, 0.035, 0, wg);
+        mk(new THREE.BoxGeometry(s * 0.3, 0.32, 0.07), M.nickel, s * 0.3, 0.16, -s * 0.4, wg);
+      }
+      wg.position.set(cx, 3.2, row.z); cg.add(wg);
+      setPick(wg, { type: 'w', id });
+      S3.weights[id] = { id, v, group: wg, home: new THREE.Vector3(cx, 3.2, row.z), onPan: false, tp: null, tq: null };
+    });
+  });
+}
+
+/* слоти на правій шальці: центр, кільце 6, кільце 10 */
+const PAN_SLOTS = (() => {
+  const s = [[0, 0]];
+  for (let i = 0; i < 6; i++) s.push([3.1 * Math.cos(i * Math.PI / 3 + 0.3), 3.1 * Math.sin(i * Math.PI / 3 + 0.3)]);
+  for (let i = 0; i < 10; i++) s.push([4.75 * Math.cos(i * Math.PI / 5), 4.75 * Math.sin(i * Math.PI / 5)]);
+  return s;
+})();
+
+/* ---------- тіла ---------- */
+const KIND_MAT = k => ({ ebon: M.ebon, alu: M.alu, steel: M.ball, cu: M.cu, beech: M.woodM, pine: M.pine })[k];
+function bodyMesh(id, t) {
+  let km = KIND_MAT(BODY(id).kind); if (id === 'tube') { km = km.clone(); km.side = THREE.DoubleSide; }                    // t: розміри в мм → у см
+  const c = {}; Object.keys(t).forEach(k => c[k] = t[k] / 10);
+  const g = new THREE.Group();
+  if (id === 'box') mk(new THREE.BoxGeometry(c.a, c.c, c.b), km, 0, 0, 0, g);
+  if (id === 'cyl') mk(new THREE.CylinderGeometry(c.d / 2, c.d / 2, c.h, 40), km, 0, 0, 0, g);
+  if (id === 'ball') mk(new THREE.SphereGeometry(c.d / 2, 40, 28), km, 0, 0, 0, g);
+  if (id === 'tube') {
+    mk(new THREE.CylinderGeometry(c.D / 2, c.D / 2, c.h, 48, 1, true), km, 0, 0, 0, g);
+    const inner = mk(new THREE.CylinderGeometry(c.dv / 2, c.dv / 2, c.h, 48, 1, true), km, 0, 0, 0, g);
+    inner.material = km.clone(); inner.material.side = THREE.BackSide;
+    [-1, 1].forEach(s => { const r = mk(new THREE.RingGeometry(c.dv / 2, c.D / 2, 48), km, 0, s * c.h / 2, 0, g); r.rotation.x = -Math.PI / 2; });
+  }
+  return g;
+}
+/* розміри в системі координат тіла: [x, y, z] у см */
+function bodyExtent(id, t) {
+  const c = {}; Object.keys(t).forEach(k => c[k] = t[k] / 10);
+  switch (id) {
+    case 'box': return [c.a, c.c, c.b];
+    case 'cyl': return [c.d, c.h, c.d];
+    case 'tube': return [c.D, c.h, c.D];
+    case 'ball': return [c.d, c.d, c.d];
+  }
+}
+/* орієнтація, за якої вимірюваний розмір іде вздовж осі X */
+function measureEuler(id, dim) {
+  const H = Math.PI / 2;
+  if (id === 'box') return dim === 'b' ? [0, H, 0] : dim === 'c' ? [0, 0, H] : [0, 0, 0];
+  if (id === 'cyl') return dim === 'h' ? [0, 0, H] : [0, 0, 0];
+  if (id === 'tube') return dim === 'dv' ? [H, 0, 0] : dim === 'h' ? [0, 0, H] : [0, 0, 0];
+  return [0, 0, 0];
+}
+function swapExtent(ext, e) {
+  let x = ext[0], y = ext[1], z = ext[2], t;
+  if (e[1]) { t = x; x = z; z = t; }
+  if (e[2]) { t = x; x = y; y = t; }
+  if (e[0]) { t = y; y = z; z = t; }
+  return [x, y, z];
+}
+const TABLE_HOME = { box: [27, 12], cyl: [43, 13], tube: [35, 5.5], ball: [33, 15] };
+
+function buildBodies(trueDims) {
+  Object.values(S3.bodies).forEach(b => { if (b.group.parent) b.group.parent.remove(b.group); });
+  S3.bodies = {};
+  BODIES.forEach(B => {
+    const t = trueDims[B.id];
+    const g = bodyMesh(B.id, t);
+    const ext = bodyExtent(B.id, t);
+    const h = TABLE_HOME[B.id];
+    const rec = { id: B.id, group: g, t, ext, loc: 'table', dim: null, tp: new THREE.Vector3(h[0], ext[1] / 2, h[1]), tq: new THREE.Quaternion() };
+    g.position.copy(rec.tp);
+    scene.add(g); setPick(g, { type: 'body', id: B.id });
+    S3.bodies[B.id] = rec;
+  });
+}
+/* перемістити тіло: loc ∈ table | pan | caliper | micrometer */
+function placeBody(id, loc, dim) {
+  const b = S3.bodies[id]; if (!b) return;
+  scene.updateMatrixWorld(true);
+  const parent = loc === 'pan' ? S3.pan[0] : scene;
+  if (b.group.parent !== parent) parent.attach(b.group);
+  b.loc = loc; b.dim = dim || null;
+  const q = new THREE.Quaternion();
+  if (loc === 'table') {
+    const h = TABLE_HOME[id]; b.tp = new THREE.Vector3(h[0], b.ext[1] / 2, h[1]);
+  } else if (loc === 'pan') {
+    b.tp = new THREE.Vector3(0, S3.panFloor + b.ext[1] / 2, 0);
+  } else {
+    const e = measureEuler(id, dim);
+    q.setFromEuler(new THREE.Euler(e[0], e[1], e[2]));
+    const ex = swapExtent(b.ext, e), size = dim === 'dv' ? b.t.dv / 10 : ex[0];
+    const base = loc === 'caliper' ? CAL : MIC;
+    if (loc === 'caliper') {
+      if (dim === 'dv') b.tp = new THREE.Vector3(CAL.x + size / 2, ex[1] / 2, CAL.z + 3.9);
+      else b.tp = new THREE.Vector3(CAL.x + size / 2, ex[1] / 2, CAL.z - 2.9);
+    } else {
+      b.tp = new THREE.Vector3(MIC.x + size / 2, Math.max(0.9, ex[1] / 2), MIC.z);
+    }
+  }
+  b.tq = q;
+}
+
+/* ---------- штангенциркуль ---------- */
+function brushedTex(w, h, base) {
+  const t = canvasTex(w, h, (x, w, h) => {
+    x.fillStyle = base; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 420; i++) {
+      x.strokeStyle = 'rgba(' + (Math.random() < 0.5 ? '255,255,255' : '55,65,75') + ',' + (0.03 + Math.random() * 0.07) + ')';
+      x.lineWidth = 1; const y = Math.random() * h;
+      x.beginPath(); x.moveTo(0, y); x.lineTo(w, y + (Math.random() - 0.5) * 2); x.stroke();
+    }
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+/* губка: контур у площині (x, s), s = −z; видавлюється вгору на depth */
+function jawMesh(pts, depth, mat, parent) {
+  const sh = new THREE.Shape(); sh.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
+  sh.closePath();
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: depth, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1 }), mat);
+  m.rotation.x = -Math.PI / 2; m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
+}
+function buildCaliper() {
+  const g = new THREE.Group(); g.position.set(CAL.x, 0, CAL.z); scene.add(g); S3.calG = g;
+  const matS = new THREE.MeshPhongMaterial({ map: brushedTex(512, 128, '#c3c8cf'), specular: 0xffffff, shininess: 75 });
+  const main = canvasTex(3400, 200, (x, w, h) => {
+    const gr = x.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#eef0f3'); gr.addColorStop(1, '#cfd4da');
+    x.fillStyle = gr; x.fillRect(0, 0, w, h); x.strokeStyle = '#15181c'; x.fillStyle = '#15181c'; x.textAlign = 'center';
+    for (let mm = 0; mm <= 165; mm++) {
+      const px = 100 + mm * 20, len = mm % 10 === 0 ? 84 : mm % 5 === 0 ? 62 : 42;
+      x.lineWidth = 3; x.beginPath(); x.moveTo(px, 0); x.lineTo(px, len); x.stroke();
+      if (mm % 10 === 0) { x.font = 'bold 44px sans-serif'; x.fillText(String(mm / 10), px, 150); }
+    }
+    x.font = 'bold 34px sans-serif'; x.textAlign = 'left'; x.fillText('мм', 130, 190); x.fillText('0,05', 2900, 190);
+  });
+  mk(new THREE.BoxGeometry(17, 0.4, 2.2), matS, 8, 0.2, 0, g);
+  const strip = new THREE.Mesh(new THREE.PlaneGeometry(17, 1.0), new THREE.MeshPhongMaterial({ map: main, specular: 0x666666, shininess: 40 }));
+  strip.rotation.x = -Math.PI / 2; strip.position.set(8, 0.41, 0.6); g.add(strip);
+  mk(new THREE.BoxGeometry(0.5, 0.45, 2.2), matS, 16.75, 0.2, 0, g);                // упор на кінці штанги
+  // нерухомі губки: нижня (зовнішні розміри) і верхня (внутрішні)
+  jawMesh([[0, -1.1], [0, 6.6], [-0.14, 6.6], [-0.55, 5.0], [-0.55, -1.1]], 0.5, matS, g);
+  jawMesh([[0, -1.1], [0, -4.4], [0.1, -4.4], [0.5, -3.0], [0.5, -1.1]], 0.4, matS, g);
+  // рухома частина
+  const mv = new THREE.Group(); g.add(mv); S3.calMov = mv;
+  jawMesh([[0, -1.1], [0, 6.6], [0.14, 6.6], [0.55, 5.0], [0.55, -1.1]], 0.5, matS, mv);
+  jawMesh([[0, -1.1], [0, -4.4], [-0.1, -4.4], [-0.5, -3.0], [-0.5, -1.1]], 0.4, matS, mv);
+  mk(new THREE.BoxGeometry(4.6, 0.9, 1.5), matS, 2.55, 0.45, -0.7, mv);               // рамка
+  mk(new THREE.BoxGeometry(4.6, 0.35, 0.3), M.dark, 2.55, 0.17, 0.2, mv);             // ковзаюча планка під шкалою
+  mk(new THREE.BoxGeometry(12.45, 0.14, 0.28), matS, 11.1, 0.47, -0.95, mv);          // лінійка глибиноміра
+  const knurl = canvasTex(128, 64, (x, w, h) => { x.fillStyle = '#7b8088'; x.fillRect(0, 0, w, h); x.fillStyle = '#3b4047'; for (let i = 0; i < w; i += 4) x.fillRect(i, 0, 2, h); });
+  const roller = mk(new THREE.CylinderGeometry(0.52, 0.52, 1.3, 28), new THREE.MeshPhongMaterial({ map: knurl, shininess: 60 }), 5.2, 0.5, -0.7, mv);
+  roller.rotation.x = Math.PI / 2;
+  const screw = mk(new THREE.CylinderGeometry(0.32, 0.32, 0.22, 20), M.black, 3.9, 1.0, -0.7, mv);
+  mk(new THREE.BoxGeometry(0.4, 0.06, 0.08), M.steel, 3.9, 1.13, -0.7, mv);
+  const ver = canvasTex(480, 140, (x, w, h) => {
+    x.fillStyle = '#f1f3f5'; x.fillRect(0, 0, w, h); x.strokeStyle = '#15181c'; x.fillStyle = '#15181c'; x.textAlign = 'center';
+    for (let k = 0; k <= 20; k++) {
+      const px = 10 + k * 19, len = k % 2 === 0 ? 56 : 36;
+      x.lineWidth = 3; x.beginPath(); x.moveTo(px, h); x.lineTo(px, h - len); x.stroke();
+      if (k % 2 === 0) { x.font = 'bold 30px sans-serif'; x.fillText(String(k / 2), px, 58); }
+    }
+  });
+  const vp = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.7), new THREE.MeshBasicMaterial({ map: ver }));
+  vp.rotation.x = -Math.PI / 2; vp.position.set(1.15, 0.915, -0.35); mv.add(vp);
+  setPick(g, { type: 'wp', id: 'caliper' });
+}
+
+/* ---------- мікрометр ---------- */
+function buildMicrometer() {
+  const g = new THREE.Group(); g.position.set(MIC.x, 0, MIC.z); scene.add(g); S3.micG = g;
+  const c = new THREE.Shape();
+  c.absarc(0.6, 0, 4.0, 0, Math.PI, false); c.lineTo(-2.0, 0); c.absarc(0.6, 0, 2.6, Math.PI, 0, true); c.lineTo(4.6, 0);
+  const fr = mk(new THREE.ExtrudeGeometry(c, { depth: 1.3, bevelEnabled: false }), M.alu, 0, 0.25, 0, g);
+  fr.rotation.x = -Math.PI / 2;
+  const an = mk(new THREE.CylinderGeometry(0.45, 0.45, 2.0, 18), M.steel, -1.0, 0.9, 0, g); an.rotation.z = Math.PI / 2;
+  mk(new THREE.BoxGeometry(1.7, 1.4, 1.5), M.alu, 4.0, 0.9, 0, g);
+  const sl = mk(new THREE.CylinderGeometry(0.55, 0.55, 3.2, 24), M.steel, 6.4, 0.9, 0, g); sl.rotation.z = Math.PI / 2;
+  const dec = canvasTex(560, 140, (x, w, h) => {
+    x.clearRect(0, 0, w, h); x.fillStyle = 'rgba(235,238,242,0.95)'; x.fillRect(0, 0, w, h);
+    x.strokeStyle = '#111'; x.fillStyle = '#111'; x.textAlign = 'center';
+    x.lineWidth = 3; x.beginPath(); x.moveTo(0, h / 2); x.lineTo(w, h / 2); x.stroke();
+    for (let mm = 0; mm <= 25; mm++) {
+      const px = 20 + mm * 20;
+      x.beginPath(); x.moveTo(px, h / 2); x.lineTo(px, h / 2 - (mm % 5 === 0 ? 40 : 26)); x.stroke();
+      if (mm < 25) { x.beginPath(); x.moveTo(px + 10, h / 2); x.lineTo(px + 10, h / 2 + 22); x.stroke(); }
+      if (mm % 5 === 0) { x.font = 'bold 26px sans-serif'; x.fillText(String(mm), px, h / 2 - 46); }
+    }
+  });
+  const dp = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.7), new THREE.MeshBasicMaterial({ map: dec }));
+  dp.rotation.x = -Math.PI / 2; dp.position.set(6.4, 1.47, 0); g.add(dp);
+  const mv = new THREE.Group(); g.add(mv); S3.micMov = mv;
+  const sp = mk(new THREE.CylinderGeometry(0.3, 0.3, 7, 14), M.steel, 3.5, 0.9, 0, mv); sp.rotation.z = Math.PI / 2;
+  const th = mk(new THREE.CylinderGeometry(0.82, 0.82, 3.0, 40), M.dark, 5.1 + 1.5, 0.9, 0, mv); th.rotation.z = Math.PI / 2;
+  const rt = mk(new THREE.CylinderGeometry(0.66, 0.66, 1.1, 30), M.black, 5.1 + 3.55, 0.9, 0, mv); rt.rotation.z = Math.PI / 2;
+  for (let i = 0; i < 24; i++) {
+    const a = i * Math.PI / 12;
+    mk(new THREE.BoxGeometry(2.0, 0.06, 0.06), M.steel, 5.1 + 1.9, 0.9 + 0.83 * Math.sin(a), 0.83 * Math.cos(a), mv, false);
+  }
+  setPick(g, { type: 'wp', id: 'micrometer' });
+}
+
+/* ---------- камера, події ---------- */
+function applyCam() {
+  const s = Math.sin(cam.ph);
+  camera.position.set(cam.t.x + cam.r * s * Math.sin(cam.th), cam.t.y + cam.r * Math.cos(cam.ph), cam.t.z + cam.r * s * Math.cos(cam.th));
+  camera.lookAt(cam.t);
+}
+const PAN_LIM = { x: [-45, 65], y: [-2, 42], z: [-35, 45] };
+function panCam(dx, dy) {                       // зсув цілі камери в площині екрана, dx/dy у пікселях
+  const rect = glCanvas.getBoundingClientRect(), k = 2 * cam.r * Math.tan(camera.fov * Math.PI / 360) / Math.max(1, rect.height);
+  camera.updateMatrixWorld(true);
+  const e = camera.matrixWorld.elements;
+  const rx = e[0], ry = e[1], rz = e[2], ux = e[4], uy = e[5], uz = e[6];
+  cam.tween = null;
+  cam.t.x = THREE.MathUtils.clamp(cam.t.x + (-rx * dx + ux * dy) * k, PAN_LIM.x[0], PAN_LIM.x[1]);
+  cam.t.y = THREE.MathUtils.clamp(cam.t.y + (-ry * dx + uy * dy) * k, PAN_LIM.y[0], PAN_LIM.y[1]);
+  cam.t.z = THREE.MathUtils.clamp(cam.t.z + (-rz * dx + uz * dy) * k, PAN_LIM.z[0], PAN_LIM.z[1]);
+  applyCam();
+}
+function flyTo(name) {
+  const p = WP[name]; if (!p) return;
+  cam.tween = { from: { t: cam.t.clone(), r: cam.r, th: cam.th, ph: cam.ph }, to: p, t0: performance.now(), dur: 900 };
+}
+function stepCam(now) {
+  const tw = cam.tween; if (!tw) return;
+  let k = Math.min(1, (now - tw.t0) / tw.dur); k = k * k * (3 - 2 * k);
+  cam.t.set(tw.from.t.x + (tw.to.t[0] - tw.from.t.x) * k, tw.from.t.y + (tw.to.t[1] - tw.from.t.y) * k, tw.from.t.z + (tw.to.t[2] - tw.from.t.z) * k);
+  cam.r = tw.from.r + (tw.to.r - tw.from.r) * k;
+  cam.th = tw.from.th + (tw.to.th - tw.from.th) * k;
+  cam.ph = tw.from.ph + (tw.to.ph - tw.from.ph) * k;
+  if (k >= 1) cam.tween = null;
+  applyCam();
+}
+function pickHit(cx, cy) {
+  const r = glCanvas.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(pickables, true);
+  for (const h of hits) {
+    let o = h.object;
+    while (o) { if (o.userData && o.userData.pick) return { pk: o.userData.pick, obj: o }; o = o.parent; }
+  }
+  return null;
+}
+const pickAt = (cx, cy) => { const h = pickHit(cx, cy); return h ? h.pk : null; };
+function toScreen(v) {
+  const r = glCanvas.getBoundingClientRect(), p = v.clone().project(camera);
+  return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height };
+}
+/* пікселів на 1 см уздовж осі X біля точки */
+function pxPerCm(x, y, z) { const a = toScreen(new THREE.Vector3(x, y, z)), b = toScreen(new THREE.Vector3(x + 1, y, z)); return Math.hypot(a.x - b.x, a.y - b.y) || 1; }
+function dragWorldPoint(cx, cy, z0) {
+  const r = glCanvas.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const o = raycaster.ray.origin, d = raycaster.ray.direction;
+  const t = (z0 - o.z) / d.z;
+  return new THREE.Vector3(o.x + d.x * t, o.y + d.y * t, z0);
+}
+function bindEvents() {
+  const ptrs = new Map(); let moved = 0, pinch = 0, hoverReq = false, drag = null, panning = false, mid = null;
+  glCanvas.addEventListener('contextmenu', e => e.preventDefault());
+  glCanvas.addEventListener('pointerdown', e => {
+    glCanvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0; drag = null; panning = e.pointerType === 'mouse' && (e.button === 1 || e.button === 2) || !!S3.panMode;
+    if (e.button === 1) e.preventDefault();
+    if (ptrs.size === 1 && !panning && e.button === 0) {
+      const h = pickHit(e.clientX, e.clientY);
+      const kind = h && S3.dragKind ? S3.dragKind(h.pk) : null;
+      if (kind) {
+        drag = { kind, pk: h.pk, obj: h.obj, active: false, x0: e.clientX };
+        if (kind === 'item') { const w = new THREE.Vector3(); h.obj.getWorldPosition(w); drag.z0 = w.z; drag.rec = h.pk.type === 'w' ? S3.weights[h.pk.id] : S3.bodies[h.pk.id]; }
+        if (kind === 'gap') { drag.ppc = pxPerCm(h.pk.id === 'caliper' ? CAL.x : MIC.x, 0.5, h.pk.id === 'caliper' ? CAL.z : MIC.z); if (S3.onGapStart) S3.onGapStart(); }
+      }
+    }
+    if (ptrs.size === 2) { drag = null; panning = false; const a = [...ptrs.values()]; pinch = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); mid = { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 }; }
+  });
+  glCanvas.addEventListener('pointermove', e => {
+    const p = ptrs.get(e.pointerId);
+    if (!p) {
+      if (!hoverReq) { hoverReq = true; requestAnimationFrame(() => { hoverReq = false; const h = pickHit(e.clientX, e.clientY); glCanvas.style.cursor = h ? (S3.dragKind && S3.dragKind(h.pk) ? 'grab' : 'pointer') : 'default'; }); }
+      return;
+    }
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+    if (ptrs.size === 2) {
+      const a = [...ptrs.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+      if (pinch) cam.r = THREE.MathUtils.clamp(cam.r * pinch / d, 16, 190); pinch = d; cam.tween = null;
+      const m = { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 };
+      if (mid) { applyCam(); panCam(m.x - mid.x, m.y - mid.y); } else applyCam();
+      mid = m; return;
+    }
+    if (drag && moved > 5) {
+      drag.active = true; glCanvas.style.cursor = 'grabbing';
+      if (drag.kind === 'gap') { if (S3.onGapDrag) S3.onGapDrag((e.clientX - drag.x0) / drag.ppc * 10 * (e.shiftKey ? 0.2 : 1)); return; }
+      if (drag.kind === 'item' && drag.rec) {
+        drag.rec.tp = null; drag.rec.tq = null;
+        const w = dragWorldPoint(e.clientX, e.clientY, drag.z0); w.y = Math.max(w.y, 1);
+        const par = drag.obj.parent; drag.obj.position.copy(par.worldToLocal(w)); return;
+      }
+    }
+    if (!drag && moved > 5 && (panning || e.shiftKey)) { glCanvas.style.cursor = 'move'; panCam(dx, dy); return; }
+    if (!drag && moved > 5) {
+      cam.tween = null; cam.th = THREE.MathUtils.clamp(cam.th - dx * 0.006, -1.3, 1.3);
+      cam.ph = THREE.MathUtils.clamp(cam.ph - dy * 0.006, 0.12, 1.5); applyCam();
+    }
+  });
+  const up = e => {
+    if (ptrs.has(e.pointerId) && ptrs.size === 1) {
+      if (drag && drag.active) {
+        if (drag.kind === 'item' && S3.onDrop) S3.onDrop(drag.pk, e.clientX, e.clientY);
+      } else if (moved <= 5 && e.button === 0) { const pk = pickAt(e.clientX, e.clientY); if (pk && S3.onPick) S3.onPick(pk); }
+    }
+    drag = null; ptrs.delete(e.pointerId); pinch = 0; mid = null; panning = false; glCanvas.style.cursor = S3.panMode ? 'move' : 'default';
+  };
+  glCanvas.addEventListener('pointerup', up);
+  glCanvas.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinch = 0; mid = null; panning = false; drag = null; });
+  glCanvas.addEventListener('wheel', e => {
+    e.preventDefault(); cam.tween = null;
+    cam.r = THREE.MathUtils.clamp(cam.r * Math.exp(e.deltaY * 0.0012), 16, 190); applyCam();
+  }, { passive: false });
+}
+
+/* ---------- анімація ---------- */
+function stepTweens(dt) {
+  const k = 1 - Math.exp(-dt * 12);
+  const go = (o, tp, tq) => {
+    if (!tp) return;
+    o.position.lerp(tp, k);
+    if (tq) o.quaternion.slerp(tq, k);
+  };
+  Object.values(S3.bodies).forEach(b => go(b.group, b.tp, b.tq));
+  Object.values(S3.weights).forEach(w => go(w.group, w.tp, w.tq));
+}
+function stepBalance(dt) {
+  const b = S3.bal;
+  if (b.arrested) { b.theta *= Math.exp(-dt * 18); b.omega = 0; if (Math.abs(b.theta) < 1e-5) b.theta = 0; }
+  else {
+    const eq = THREE.MathUtils.clamp((b.mL - b.mR) * THETA_PER_G, -0.16, 0.16);
+    const w0 = 2 * Math.PI / 3.5, z = 0.22, n = Math.max(1, Math.ceil(dt / (1 / 240))), h = dt / n;
+    for (let i = 0; i < n; i++) {
+      const a = -w0 * w0 * (b.theta - eq) - 2 * z * w0 * b.omega;
+      b.omega += a * h; b.theta += b.omega * h;
+    }
+  }
+  S3.beam.rotation.z = b.theta;
+  const s = Math.sin(b.theta), c = Math.cos(b.theta);
+  S3.pan[0].position.set(-ARM * c, PIVOT_Y - ARM * s, 0);
+  S3.pan[1].position.set(ARM * c, PIVOT_Y + ARM * s, 0);
+  S3.knob.rotation.z += ((b.arrested ? 0 : Math.PI / 2) - S3.knob.rotation.z) * (1 - Math.exp(-dt * 10));
+}
+
+let lastT = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!S3.active || !S3.ready) { lastT = now; return; }
+  const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016); lastT = now;
+  stepCam(now); stepBalance(dt); stepTweens(dt);
+  S3.calMov.position.x += (S3.gapCal / 10 - S3.calMov.position.x) * (1 - Math.exp(-dt * 25));
+  S3.micMov.position.x += (S3.gapMic / 10 - S3.micMov.position.x) * (1 - Math.exp(-dt * 25));
+  renderer.render(scene, camera);
+  if (S3.onFrame) S3.onFrame(dt);
+}
+function resize() {
+  const w = stageEl.clientWidth, h = stageEl.clientHeight; if (!w || !h) return;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+
+/* ---------- публічний інтерфейс ---------- */
+S3.init = function (canvas, stage, trueDims) {
+  glCanvas = canvas; stageEl = stage;
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0xe9e6df);
+  camera = new THREE.PerspectiveCamera(36, 1.6, 1, 700);
+  raycaster = new THREE.Raycaster();
+  cam.t = new THREE.Vector3();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x9b8465, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75);
+  sun.position.set(-40, 90, 60); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -80, right: 80, top: 70, bottom: -50, near: 10, far: 260 });
+  sun.shadow.camera.updateProjectionMatrix(); sun.shadow.bias = -0.0006; scene.add(sun);
+  makeMaterials(); buildRoom(); buildBalance(); buildCase(); buildBodies(trueDims); buildCaliper(); buildMicrometer();
+  S3.gapCal = 0; S3.gapMic = 0;
+  const p = WP.overview; cam.t.set(p.t[0], p.t[1], p.t[2]); cam.r = p.r; cam.th = p.th; cam.ph = p.ph; applyCam();
+  bindEvents(); resize();
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage); else window.addEventListener('resize', resize);
+  S3.ready = true; requestAnimationFrame(frame);
+};
+S3.fly = flyTo;
+S3.pan = panCam;
+S3.panMode = false;
+S3.rebuild = function (trueDims) { buildBodies(trueDims); };
+S3.placeBody = placeBody;
+S3.setArrest = function (on) {
+  const b = S3.bal;
+  if (!on && b.arrested) { b.omega = (Math.random() < 0.5 ? -1 : 1) * (0.05 + Math.random() * 0.03); }
+  b.arrested = on;
+};
+S3.setLoads = function (mL, mR) { S3.bal.mL = mL; S3.bal.mR = mR; };
+S3.pointerDiv = () => S3.bal.theta / THETA_DIV;
+S3.setWeight = function (id, on) {
+  const w = S3.weights[id]; if (!w) return;
+  scene.updateMatrixWorld(true);
+  if (on) {
+    const used = new Set(Object.values(S3.weights).filter(x => x.onPan && x !== w).map(x => x.slot));
+    let s = 0; while (used.has(s) && s < PAN_SLOTS.length - 1) s++;
+    w.slot = s; w.onPan = true;
+    S3.pan[1].attach(w.group);
+    w.tp = new THREE.Vector3(PAN_SLOTS[s][0], S3.panFloor, PAN_SLOTS[s][1]);
+  } else {
+    w.onPan = false; S3.caseG.attach(w.group); w.tp = w.home.clone();
+  }
+  w.tq = new THREE.Quaternion();
+};
+S3.panHit = function (i, cx, cy) {
+  scene.updateMatrixWorld(true);
+  const c = new THREE.Vector3(); S3.pan[i].getWorldPosition(c); c.y -= HANG - 0.5;
+  const a = toScreen(c), b = toScreen(new THREE.Vector3(c.x + 6.5, c.y, c.z));
+  return Math.hypot(cx - a.x, cy - a.y) < Math.hypot(a.x - b.x, a.y - b.y) * 1.25;
+};
+S3.setActive = a => { S3.active = a; if (a) resize(); };
+
+/* ===== Лупа: збільшені шкали приладів (canvas 2D) ===== */
+const LP = { steel: '#dfe3e7', steel2: '#b9c0c8', ink: '#101418', acc: '#d1342b', plate: '#eceff2' };
+
+function lpSetup(cv) {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const W = Math.max(240, Math.round(r.width)), H = Math.max(60, Math.round(r.height));
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  return { ctx, W, H };
+}
+function lpLine(ctx, x, y1, y2, w, col) {
+  ctx.strokeStyle = col || LP.ink; ctx.lineWidth = w || 1;
+  ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, y1); ctx.lineTo(Math.round(x) + 0.5, y2); ctx.stroke();
+}
+function lpTxt(ctx, s, x, y, size, col, align) {
+  ctx.fillStyle = col || LP.ink; ctx.font = (size || 12) + 'px "IBM Plex Mono", ui-monospace, monospace'; ctx.textAlign = align || 'center'; ctx.fillText(s, x, y);
+}
+
+/* штангенциркуль: штанга зверху, ноніус знизу; gap — розсування в мм */
+function drawCaliper(cv, gap, hint) {
+  const { ctx, W, H } = lpSetup(cv);
+  const pad = 12, span = 25, s0 = gap - 3, px = (W - 2 * pad) / span, X = mm => pad + (mm - s0) * px;
+  const Y0 = Math.round(H * 0.52);
+  ctx.fillStyle = LP.steel; ctx.fillRect(0, Y0 - 50, W, 50);
+  ctx.fillStyle = LP.steel2; ctx.fillRect(0, Y0, W, 50);
+  const g20 = Math.round(gap * 20), I = Math.floor(g20 / 20), j = g20 % 20;
+  // ноніус
+  const x0 = X(gap), x1 = X(gap + 19);
+  ctx.fillStyle = LP.plate; ctx.fillRect(x0 - 8, Y0, x1 - x0 + 18, 50);
+  for (let mm = Math.ceil(s0); mm <= Math.floor(s0 + span); mm++) {
+    if (mm < 0) continue;
+    const x = X(mm), len = mm % 10 === 0 ? 32 : mm % 5 === 0 ? 24 : 16;
+    lpLine(ctx, x, Y0 - len, Y0, 1);
+    if (mm % 10 === 0) lpTxt(ctx, String(mm / 10), x, Y0 - 38, 13);
+  }
+  for (let k = 0; k <= 20; k++) {
+    const x = X(gap + k * 0.95), len = k % 2 === 0 ? 28 : 17;
+    lpLine(ctx, x, Y0, Y0 + len, k === 0 ? 2 : 1);
+    if (k % 2 === 0) lpTxt(ctx, String(k / 2), x, Y0 + 43, 12);
+  }
+  ctx.fillStyle = LP.ink; ctx.fillRect(0, Y0 - 0.5, W, 1);
+  if (hint) {
+    lpLine(ctx, X(I), Y0 - 40, Y0 + 2, 2, LP.acc);
+    const xk = X(gap + j * 0.95);
+    lpLine(ctx, xk, Y0 - 34, Y0 + 34, 3, LP.acc);
+    lpTxt(ctx, 'збіг: ' + j + '-а риска', Math.min(W - 60, Math.max(60, xk)), H - 6, 12, LP.acc);
+    lpTxt(ctx, I + ' мм', X(I), 14, 12, LP.acc);
+  }
+  lpTxt(ctx, 'штанга, мм ↑', 10, 14, 11, '#5b6876', 'left');
+  lpTxt(ctx, 'ноніус 0,05 мм ↓', W - 10, H - 6, 11, '#5b6876', 'right');
+}
+
+/* мікрометр: гільза зліва, барабан справа */
+function drawMicrometer(cv, gap, hint) {
+  const { ctx, W, H } = lpSetup(cv);
+  const g100 = Math.round(gap * 100), half = Math.floor(g100 / 50), t = g100 - half * 50, E = gap;
+  const px = 38, xE = Math.min(Math.round(W * 0.6), W - 150), Yr = Math.round(H / 2);
+  ctx.fillStyle = LP.steel; ctx.fillRect(0, Yr - 46, xE, 92);
+  ctx.fillStyle = LP.ink; ctx.fillRect(0, Yr - 0.5, xE, 1.5);
+  const hMin = Math.ceil((E - xE / px) * 2), hMax = Math.floor(E * 2 + 1e-9);
+  for (let h = Math.max(0, hMin); h <= hMax; h++) {
+    const mm = h / 2, x = xE - (E - mm) * px;
+    if (h % 2 === 0) { lpLine(ctx, x, Yr - (mm % 5 === 0 ? 34 : 22), Yr, 1.5); if (mm % 5 === 0) lpTxt(ctx, String(mm), x, Yr - 40, 13); }
+    else lpLine(ctx, x, Yr, Yr + 18, 1.5);
+  }
+  // барабан
+  const gr = ctx.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#8b929a'); gr.addColorStop(0.5, '#c4c9cf'); gr.addColorStop(1, '#8b929a');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(xE, 4); ctx.lineTo(W - 6, 4); ctx.lineTo(W - 6, H - 4); ctx.lineTo(xE, H - 4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#6d747c'; ctx.fillRect(xE, 4, 3, H - 8);
+  const sp = 12;
+  for (let i = -7; i <= 7; i++) {
+    const idx = ((t + i) % 50 + 50) % 50, y = Yr + i * sp;
+    if (y < 8 || y > H - 8) continue;
+    ctx.strokeStyle = LP.ink; ctx.lineWidth = idx % 5 === 0 ? 1.6 : 1;
+    ctx.beginPath(); ctx.moveTo(xE + 3, Math.round(y) + 0.5); ctx.lineTo(xE + (idx % 5 === 0 ? 34 : 20), Math.round(y) + 0.5); ctx.stroke();
+    if (idx % 5 === 0) lpTxt(ctx, String(idx), xE + 52, y + 4, 12);
+  }
+  ctx.fillStyle = LP.acc; ctx.beginPath(); ctx.moveTo(xE - 12, Yr); ctx.lineTo(xE - 3, Yr - 5); ctx.lineTo(xE - 3, Yr + 5); ctx.closePath(); ctx.fill();
+  if (hint) {
+    const hx = xE - (E - half / 2) * px;
+    lpLine(ctx, hx, Yr - 44, Yr + 24, 3, LP.acc);
+    lpTxt(ctx, (half / 2).toFixed(1).replace('.', ',') + ' мм', Math.max(40, hx), 14, 12, LP.acc);
+    ctx.strokeStyle = LP.acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(xE + 3, Yr + 0.5); ctx.lineTo(W - 12, Yr + 0.5); ctx.stroke();
+    lpTxt(ctx, 'поділка ' + t, W - 14, Yr - 12, 12, LP.acc, 'right');
+  }
+  lpTxt(ctx, 'гільза, мм', 10, H - 6, 11, '#5b6876', 'left');
+  lpTxt(ctx, 'барабан, 0,01 мм', W - 12, H - 8, 11, '#33404d', 'right');
+}
+
+/* шкала терезів −10…+10 */
+function drawBalanceScale(cv, div, eq) {
+  const { ctx, W, H } = lpSetup(cv);
+  const xc = W / 2, pd = (W - 60) / 24, X = d => xc + d * pd;
+  ctx.fillStyle = '#f7f7f4'; ctx.fillRect(0, 0, W, H);
+  const y0 = 26;
+  for (let i = -10; i <= 10; i++) {
+    lpLine(ctx, X(i), y0, y0 + (i % 5 === 0 ? 30 : 18), i === 0 ? 3 : 1.4);
+    if (i % 5 === 0) lpTxt(ctx, String(Math.abs(i)), X(i), y0 + 46, 13);
+  }
+  if (eq !== null && isFinite(eq)) {
+    const e = Math.max(-12, Math.min(12, eq));
+    ctx.setLineDash([4, 3]); lpLine(ctx, X(e), 6, H - 6, 1.5, '#1f7a4d'); ctx.setLineDash([]);
+  }
+  const d = Math.max(-12.4, Math.min(12.4, div)), px = X(d);
+  ctx.fillStyle = LP.acc; ctx.beginPath(); ctx.moveTo(px, y0 - 2); ctx.lineTo(px - 7, y0 - 16); ctx.lineTo(px + 7, y0 - 16); ctx.closePath(); ctx.fill();
+  lpLine(ctx, px, y0 - 16, y0 + 36, 2, LP.acc);
+  lpTxt(ctx, 'шкала стрілки терезів (поділки)', 10, H - 6, 11, '#5b6876', 'left');
+}
+
+/* ===== Стан, інтерфейс, журнал, обробка ===== */
+const LS_KEY = 'lab2-density-v1';
+const $ = id => document.getElementById(id);
+const state = {
+  variant: 1, tab: 'exp', wp: 'overview', sel: 'box', alpha: 0.95, auto: false, hint: true, units: 'si',
+  data: {}, tru: null, spec: { box: 0, cyl: 0, tube: 0, ball: 0 }, stash: {},
+  bal: { arrested: true, bodyOn: false, on: new Set() },
+  inst: { dim: null, gap: 0, clamped: false, size: 0, sampleQ: 0, tries: 0, tip: false }
+};
+const FORM = {
+  box:  { f: 'ρ = m / (a·b·c)',        tab: 1 },
+  cyl:  { f: 'ρ = 4m / (π d² h)',      tab: 2 },
+  tube: { f: 'ρ = 4m / [π h (d<sub>зов</sub>² − d<sub>вн</sub>²)]', tab: 3 },
+  ball: { f: 'ρ = 6m / (π d³)',        tab: 4 }
+};
+
+/* ---------- дані ---------- */
+function emptyData() {
+  const d = {};
+  BODIES.forEach(B => {
+    const dims = {}, sel = {};
+    B.dims.forEach(x => { dims[x.k] = { caliper: [], micrometer: [] }; });
+    d[B.id] = { mass: [], dims, sel };
+  });
+  return d;
+}
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ variant: state.variant, data: state.data, alpha: state.alpha, units: state.units, spec: state.spec, stash: state.stash })); } catch (e) {}
+}
+function load() {
+  try {
+    const j = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (j && j.data) { state.variant = j.variant || 1; state.data = j.data; state.alpha = j.alpha || 0.95; state.units = j.units || 'si'; state.stash = j.stash || {}; if (j.spec) Object.keys(state.spec).forEach(k => { const v = j.spec[k]; if (v >= 0 && v < 3) state.spec[k] = v; }); return true; }
+  } catch (e) {}
+  return false;
+}
+const parseNum = s => { s = String(s).trim().replace(/\s/g, '').replace(',', '.'); return s === '' ? NaN : Number(s); };
+const tdim = (bid, k) => state.tru.dims[bid][k];
+
+/* ---------- повідомлення ---------- */
+let toastT = 0;
+function toast(msg, kind) {
+  const t = $('toast'); t.textContent = msg; t.className = 'toast show ' + (kind || '');
+  clearTimeout(toastT); toastT = setTimeout(() => { t.className = 'toast'; }, 4200);
+}
+function fb(id, msg, kind) { const e = $(id); e.textContent = msg; e.className = 'fb ' + (kind || ''); }
+
+/* ---------- прогрес вимірювань ---------- */
+function seriesFor(bid, k) {
+  const dd = state.data[bid], ins = dd.sel[k];
+  return ins ? { ins, vals: dd.dims[k][ins] } : { ins: null, vals: [] };
+}
+function buildRows(bid) {
+  const B = BODY(bid), dd = state.data[bid];
+  const cols = [{ k: 'm', vals: dd.mass }].concat(B.dims.map(d => ({ k: d.k, vals: seriesFor(bid, d.k).vals })));
+  const n = Math.max(0, ...cols.map(c => c.vals.length)), rows = [];
+  for (let i = 0; i < n; i++) {
+    const r = { i, cells: {}, complete: true };
+    cols.forEach(c => { const v = c.vals[i]; r.cells[c.k] = v; if (v === undefined) r.complete = false; });
+    rows.push(r);
+  }
+  return rows;
+}
+function progressHTML(bid) {
+  const B = BODY(bid), dd = state.data[bid];
+  const bits = ['<span class="pg' + (dd.mass.length >= 3 ? ' ok' : '') + '">m·' + dd.mass.length + '</span>'];
+  B.dims.forEach(d => { const n = seriesFor(bid, d.k).vals.length; bits.push('<span class="pg' + (n >= 3 ? ' ok' : '') + '">' + d.sym + '·' + n + '</span>'); });
+  return bits.join('');
+}
+
+/* ---------- вибір тіла та робочого місця ---------- */
+function renderBodyCards() {
+  $('bodyCards').innerHTML = BODIES.map(B =>
+    '<button class="bcard' + (B.id === state.sel ? ' on' : '') + '" data-b="' + B.id + '" aria-pressed="' + (B.id === state.sel) + '">' +
+    '<span class="bico ' + B.id + '" style="--c:' + KIND_COL[B.kind] + '" aria-hidden="true"></span><span class="bname">' + B.short + ' <small>№' + (B.spec + 1) + '</small></span>' +
+    '<span class="bprog">' + progressHTML(B.id) + '</span></button>').join('');
+}
+/* ---------- вибір зразка (3 на кожне тіло) ---------- */
+const btitle = B => B.name + ' · зразок №' + (B.spec + 1);
+function renderSpecRow() {
+  const B = BODY(state.sel);
+  $('specSeg').innerHTML = [0, 1, 2].map(i => {
+    const sp = SPECS[B.id][i];
+    return '<button data-s="' + i + '" class="' + (i === B.spec ? 'on' : '') + '" aria-pressed="' + (i === B.spec) + '" title="' + KIND_DESC[sp.kind] + '"><span class="sdot" style="background:' + KIND_COL[sp.kind] + '"></span>№' + (i + 1) + '</button>';
+  }).join('');
+  $('specInfo').textContent = KIND_DESC[B.kind] + '. Матеріал визначте за густиною.';
+}
+function switchSpec(id, s) {
+  const B = BODY(id); if (s === B.spec) return;
+  if (state.sel === id) {
+    if (S3.bodies[id] && S3.bodies[id].loc !== 'table') S3.placeBody(id, 'table');
+    state.bal.bodyOn = false; state.inst.dim = null;
+  }
+  state.stash[id + ':' + B.spec] = state.data[id];
+  state.data[id] = state.stash[id + ':' + s] || emptyData()[id];
+  delete state.stash[id + ':' + s];
+  state.spec[id] = s; applySpec(id, s);
+  state.tru = makeVariant(state.variant);
+  S3.rebuild(state.tru.dims); updateLoads();
+  if (isInst(state.wp)) setupMeasure();
+  save(); renderSpecRow(); renderBodyCards(); updatePanel(); drawLoupe();
+  if (state.tab === 'log') renderLog(); if (state.tab === 'calc') renderCalc();
+}
+function selectBody(id) {
+  const prev = state.sel;
+  if (prev !== id) {
+    if (S3.bodies[prev] && S3.bodies[prev].loc !== 'table') S3.placeBody(prev, 'table');
+    state.bal.bodyOn = false; updateLoads();
+    state.sel = id; state.inst.dim = null;
+  }
+  if (isInst(state.wp)) setupMeasure();
+  renderBodyCards(); renderSpecRow(); updatePanel();
+}
+const isInst = w => w === 'caliper' || w === 'micrometer';
+
+function setWorkplace(wp) {
+  const old = state.wp;
+  if (wp === old) { S3.fly(wp); return; }
+  const b = S3.bodies[state.sel];
+  if (old === 'scale' && wp !== 'scale' && state.bal.bodyOn) {
+    if (!state.bal.arrested) { state.bal.arrested = true; S3.setArrest(true); toast('Терези аретировано, тіло знято з шальки.', ''); }
+    S3.placeBody(state.sel, 'table'); state.bal.bodyOn = false; updateLoads();
+  }
+  if (isInst(old) && b && b.loc !== 'table') S3.placeBody(state.sel, 'table');
+  state.wp = wp; S3.fly(wp);
+  if (isInst(wp)) { state.inst.dim = null; setupMeasure(); }
+  updatePanel(); drawLoupe();
+}
+
+/* ---------- терези ---------- */
+function updateLoads() {
+  const mL = state.bal.bodyOn ? state.tru.mass[state.sel] : 0;
+  let mR = 0; state.bal.on.forEach(i => { mR += WEIGHT_VALUES[i]; });
+  S3.setLoads(mL, mR); return { mL, mR };
+}
+function needArrest() {
+  if (!state.bal.arrested) { toast('Терези не аретировані! Спершу затисніть аретир — класти й знімати тіло та гирі можна лише на аретированих терезах.', 'warn'); return true; }
+  return false;
+}
+function toggleArrest() {
+  state.bal.arrested = !state.bal.arrested; S3.setArrest(state.bal.arrested); updatePanel();
+}
+function toggleBody() {
+  if (needArrest()) return;
+  if (!state.bal.bodyOn) {
+    const b = S3.bodies[state.sel]; if (b.loc !== 'table') S3.placeBody(state.sel, 'table');
+    S3.placeBody(state.sel, 'pan'); state.bal.bodyOn = true;
+  } else { S3.placeBody(state.sel, 'table'); state.bal.bodyOn = false; }
+  updateLoads(); updatePanel();
+}
+function toggleWeight(i) {
+  if (needArrest()) return;
+  const on = !state.bal.on.has(i);
+  if (on) state.bal.on.add(i); else state.bal.on.delete(i);
+  S3.setWeight(i, on); updateLoads(); updatePanel();
+}
+function sumRight() { let s = 0; state.bal.on.forEach(i => { s += WEIGHT_VALUES[i]; }); return Math.round(s * 1000) / 1000; }
+function submitMass() {
+  const { mL, mR } = updateLoads();
+  if (!state.bal.bodyOn) return fb('massFb', 'Покладіть тіло на ліву шальку.', 'bad');
+  if (state.bal.arrested) return fb('massFb', 'Відпустіть аретир і дочекайтеся, поки стрілка коливатиметься біля нуля.', 'bad');
+  const d = (mL - mR);
+  if (Math.abs(d) > BALANCE.tol) {
+    return fb('massFb', 'Терези не врівноважені: стрілка зміщується в бік ' + (d > 0 ? 'лівої' : 'правої') + ' шальки. ' + (d > 0 ? 'Додайте гирі.' : 'Зніміть найменшу гирю або замініть на меншу.') , 'bad');
+  }
+  const exp = Math.round(mR * 100) / 100; let v;
+  if (state.auto) v = exp;
+  else {
+    v = parseNum($('massIn').value);
+    if (isNaN(v)) return fb('massFb', 'Введіть масу в грамах (сума гир на правій шальці).', 'bad');
+    if (Math.abs(v - exp) > 0.0005) return fb('massFb', 'Сума гир інша. Додайте маси гир на шальці ще раз: від більших до менших, мг — у частках грама.', 'bad');
+  }
+  state.data[state.sel].mass.push(exp); save();
+  $('massIn').value = '';
+  fb('massFb', 'Записано: m = ' + fx(exp, 2) + ' г (запис № ' + state.data[state.sel].mass.length + '). Для наступного зважування зніміть тіло та покладіть знову.', 'ok');
+  renderBodyCards();
+}
+
+/* ---------- штангенциркуль / мікрометр ---------- */
+function canMeasure(ins, d, bid) {
+  const t = tdim(bid, d.k);
+  if (ins === 'micrometer') return !d.inner && t <= INSTR.micrometer.max;
+  return t <= INSTR.caliper.max;
+}
+function whyNot(ins, d, bid) {
+  if (ins === 'micrometer') {
+    if (d.inner) return 'Внутрішній діаметр мікрометром не виміряти: скористайтеся верхніми губками штангенциркуля.';
+    if (tdim(bid, d.k) > INSTR.micrometer.max) return 'Розмір більший за межу вимірювання мікрометра (0–25 мм): виміряйте штангенциркулем.';
+  }
+  return '';
+}
+function curDim() { return BODY(state.sel).dims.find(d => d.k === state.inst.dim); }
+const isInner = () => { const d = curDim(); return !!(d && d.inner); };
+function openGap(ins, size) {
+  const I = INSTR[ins], extra = ins === 'caliper' ? 7 : 3;
+  if (isInner()) return Math.max(0, Math.floor((size - 6) / I.step) * I.step);   // внутрішні губки: стулені, розсуваємо до стінок
+  return Math.min(I.max, Math.ceil((size + extra) / I.step) * I.step);
+}
+function setupMeasure() {
+  const ins = state.wp, B = BODY(state.sel), inst = state.inst;
+  const ok = B.dims.filter(d => canMeasure(ins, d, B.id));
+  if (!inst.dim || !ok.find(d => d.k === inst.dim)) inst.dim = ok.length ? ok[0].k : null;
+  inst.clamped = false; inst.tries = 0; inst.tip = false;
+  const I = INSTR[ins];
+  if (inst.dim) {
+    inst.size = tdim(B.id, inst.dim);
+    S3.placeBody(B.id, ins, inst.dim);
+    inst.gap = openGap(ins, inst.size);
+  } else {
+    if (S3.bodies[B.id].loc !== 'table') S3.placeBody(B.id, 'table');
+    inst.gap = 0;
+  }
+  applyGap();
+  $('readIn').value = ''; fb('readFb', '', '');
+}
+function applyGap() {
+  const ins = state.wp, I = INSTR[ins]; if (!I) return;
+  if (ins === 'caliper') S3.gapCal = state.inst.gap; else S3.gapMic = state.inst.gap;
+  const r = $('gapRange'); r.max = I.max; r.step = I.step; r.value = state.inst.gap;
+  $('gapVal').textContent = state.inst.clamped ? 'тіло затиснуто' : fx(state.inst.gap, 2) + ' мм';
+  $('gapVal').className = 'mono' + (state.inst.clamped ? ' ok' : '');
+}
+function drawSample() {
+  const B = BODY(state.sel), d = B.dims.find(x => x.k === state.inst.dim), I = INSTR[state.wp];
+  state.inst.sampleQ = Math.round(sampleReading(state.inst.size, d.sd, I.step) / I.step) * I.step;
+}
+function requestGap(v) {
+  const ins = state.wp, I = INSTR[ins], inst = state.inst;
+  v = Math.max(0, Math.min(I.max, Math.round(v / I.step) * I.step));
+  if (inst.dim) {
+    const inner = isInner();
+    if (inst.clamped) {
+      if (inner ? v >= inst.sampleQ - 1e-9 : v <= inst.sampleQ + 1e-9) v = inst.sampleQ; else inst.clamped = false;
+    } else if (inner ? v >= inst.size - 1e-9 : v <= inst.size + 1e-9) {
+      drawSample(); inst.clamped = true; inst.tries = 0; v = inst.sampleQ;
+      toast(ins === 'caliper' ? 'Губки торкнулися тіла. Зніміть відлік.' : 'Тріскачка клацнула: тіло затиснуто. Зніміть відлік.', 'ok');
+    }
+  }
+  inst.gap = v; applyGap(); drawLoupe();
+}
+function expectedReading() { return state.inst.sampleQ; }
+function tipText() {
+  const g = state.inst.sampleQ;
+  if (state.wp === 'caliper') {
+    const g20 = Math.round(g * 20), I = Math.floor(g20 / 20), j = g20 % 20;
+    return 'Штанга: остання риска ліворуч від нуля ноніуса — ' + I + ' мм. Ноніус: з основною шкалою збігається ' + j + '-а риска, ' + j + ' × 0,05 = ' + fx(j * 0.05, 2) + ' мм. Відлік: ' + I + ' + ' + fx(j * 0.05, 2) + ' = ' + fx(g, 2) + ' мм.';
+  }
+  const g100 = Math.round(g * 100), half = Math.floor(g100 / 50), t = g100 - half * 50;
+  return 'Гільза: остання видима риска — ' + fx(half / 2, 1) + ' мм (нижні риски — півміліметри). Барабан: проти осьової лінії поділка ' + t + ', ' + t + ' × 0,01 = ' + fx(t / 100, 2) + ' мм. Відлік: ' + fx(half / 2, 1) + ' + ' + fx(t / 100, 2) + ' = ' + fx(g, 2) + ' мм.';
+}
+function submitReading() {
+  const inst = state.inst, B = BODY(state.sel), ins = state.wp;
+  if (!inst.dim) return fb('readFb', 'Для цього тіла немає розміру, який можна виміряти цим приладом.', 'bad');
+  if (!inst.clamped) return fb('readFb', 'Спершу доведіть губки до контакту з тілом (кнопка «' + (isInner() ? 'Розсунути до стінок' : 'Зімкнути на тілі') + '» або повзунок).', 'bad');
+  const exp = expectedReading();
+  if (!state.auto) {
+    const v = parseNum($('readIn').value);
+    if (isNaN(v)) return fb('readFb', 'Введіть відлік у міліметрах, наприклад ' + fx(exp, 2) + '.', 'bad');
+    if (Math.abs(v - exp) > INSTR[ins].step / 2) {
+      inst.tries++;
+      return fb('readFb', 'Відлік неточний. ' + (inst.tries >= 2 ? 'Натисніть «Підказка», щоб побачити розбір відліку.' : 'Перевірте цілі міліметри та частки.'), 'bad');
+    }
+  }
+  const store = state.data[B.id].dims[inst.dim];
+  store[ins].push(Math.round(exp * 100) / 100); state.data[B.id].sel[inst.dim] = ins; save();
+  $('readIn').value = '';
+  const n = store[ins].length, dn = B.dims.find(d => d.k === inst.dim).name;
+  fb('readFb', 'Записано: ' + dn + ' = ' + fx(exp, 2) + ' мм (вимірювання № ' + n + '). Розкрийте губки й виміряйте в іншому місці.', 'ok');
+  inst.clamped = false; inst.tip = false; inst.gap = openGap(ins, inst.size); applyGap(); drawLoupe(); renderBodyCards(); renderDimChips();
+}
+function renderDimChips() {
+  const B = BODY(state.sel), ins = state.wp; if (!isInst(ins)) return;
+  $('dimChips').innerHTML = B.dims.map(d => {
+    const ok = canMeasure(ins, d, B.id), n = state.data[B.id].dims[d.k][ins].length;
+    return '<button class="chip dim' + (state.inst.dim === d.k ? ' on' : '') + (ok ? '' : ' off') + '" data-d="' + d.k + '"' + (ok ? '' : ' aria-disabled="true"') + '>' + d.name.replace(/_(\S+)/, '<sub>$1</sub>') + ' <span class="cnt">' + n + '</span></button>';
+  }).join('');
+  const msgs = B.dims.filter(d => !canMeasure(ins, d, B.id)).map(d => whyNot(ins, d, B.id)).filter((s, i, a) => s && a.indexOf(s) === i);
+  const m = $('instMsg'); m.hidden = !msgs.length; m.textContent = msgs.join(' ');
+}
+
+/* ---------- лупа ---------- */
+function drawLoupe() {
+  const cv = $('loupe'), wp = state.wp;
+  $('loupeWrap').hidden = !(wp === 'scale' || isInst(wp));
+  if ($('loupeWrap').hidden) return;
+  cv.style.height = wp === 'scale' ? '86px' : (wp === 'micrometer' ? '170px' : '150px');
+  if (wp === 'scale') { const d = updateLoadsPeek(); drawBalanceScale(cv, S3.pointerDiv(), state.hint ? d : null); }
+  else if (wp === 'caliper') drawCaliper(cv, state.inst.gap, state.inst.tip);
+  else drawMicrometer(cv, state.inst.gap, state.inst.tip);
+}
+function updateLoadsPeek() {
+  const mL = state.bal.bodyOn ? state.tru.mass[state.sel] : 0; let mR = 0; state.bal.on.forEach(i => { mR += WEIGHT_VALUES[i]; });
+  return (mL - mR) * 1000 / BALANCE.mgPerDiv;
+}
+
+/* ---------- оновлення панелі ---------- */
+function updatePanel() {
+  document.querySelectorAll('#wpSeg button').forEach(b => b.classList.toggle('on', b.dataset.w === state.wp));
+  $('wp-over').hidden = state.wp !== 'overview';
+  $('wp-scale').hidden = state.wp !== 'scale';
+  $('wp-inst').hidden = !isInst(state.wp);
+  const B = BODY(state.sel);
+  $('hudBody').textContent = btitle(B);
+  $('hudWp').textContent = { overview: 'Огляд лабораторії', scale: 'Терези ВА-200', caliper: 'Штангенциркуль, ціна поділки 0,05 мм', micrometer: 'Мікрометр, ціна поділки 0,01 мм' }[state.wp];
+  if (state.wp === 'scale') {
+    const bal = state.bal;
+    $('arrPill').textContent = bal.arrested ? 'Аретир: затиснуто' : 'Аретир: відпущено';
+    $('arrPill').className = 'pill ' + (bal.arrested ? '' : 'live');
+    $('btnArrest').textContent = bal.arrested ? 'Відпустити аретир' : 'Затиснути аретир';
+    $('btnPan').textContent = bal.bodyOn ? 'Зняти тіло з шальки' : 'Покласти тіло на ліву шальку';
+    $('wGrid').querySelectorAll('button').forEach(b => b.classList.toggle('on', bal.on.has(Number(b.dataset.i))));
+    const list = [...bal.on].sort((a, b) => a - b).map(i => wLabel(WEIGHT_VALUES[i]));
+    $('panChips').innerHTML = list.length ? list.map(s => '<span class="chip">' + s + '</span>').join('') : '<span class="muted">На правій шальці гирь немає</span>';
+  }
+  if (isInst(state.wp)) {
+    $('instTitle').textContent = state.wp === 'caliper'
+      ? 'Штангенциркуль 0–150 мм. Нижні губки — зовнішні розміри, верхні — внутрішній діаметр. Відлік = цілі мм по штанзі + k·0,05 мм за збігом риски ноніуса.'
+      : 'Мікрометр 0–25 мм. Відлік = мм і півміліметри по гільзі + соті частки мм по барабану. Тіло затискайте тріскачкою.';
+    $('readLbl').textContent = 'Відлік, мм';
+    $('btnClose').textContent = isInner() ? 'Розсунути до стінок' : 'Зімкнути на тілі';
+    buildStepBtns(); renderDimChips(); applyGap();
+  }
+  renderBodyCards();
+}
+function buildStepBtns() {
+  const ins = state.wp, st = ins === 'caliper' ? [1, 0.1, 0.05] : [0.5, 0.1, 0.01];
+  const html = [];
+  st.forEach(s => html.push('<button class="btn sm" data-s="' + (-s) + '">−' + fx(s, s < 0.1 ? 2 : (s < 1 ? 1 : 0)) + '</button>'));
+  st.slice().reverse().forEach(s => html.push('<button class="btn sm" data-s="' + s + '">+' + fx(s, s < 0.1 ? 2 : (s < 1 ? 1 : 0)) + '</button>'));
+  $('stepBtns').innerHTML = html.join('');
+}
+
+/* ---------- обробка 3D-кліків ---------- */
+let gapBase = 0;
+S3.dragKind = pk => {
+  if (pk.type === 'w') return 'item';
+  if (pk.type === 'body') return (state.wp === 'scale' || state.wp === 'overview') ? 'item' : null;
+  if (pk.type === 'wp' && pk.id === state.wp) return 'gap';
+  return null;
+};
+S3.onGapStart = () => { gapBase = state.inst.gap; };
+S3.onGapDrag = d => requestGap(gapBase + d);
+S3.onDrop = (pk, cx, cy) => {
+  if (pk.type === 'w') {
+    const cur = state.bal.on.has(pk.id), want = S3.panHit(1, cx, cy);
+    if (state.wp !== 'scale') setWorkplace('scale');
+    if (want !== cur && !needArrest()) toggleWeight(pk.id); else S3.setWeight(pk.id, cur);
+  } else {
+    const onPan = state.bal.bodyOn && pk.id === state.sel, want = S3.panHit(0, cx, cy);
+    if (state.wp !== 'scale') setWorkplace('scale');
+    if (want && !onPan) {
+      if (needArrest()) { S3.placeBody(pk.id, pk.id === state.sel && state.bal.bodyOn ? 'pan' : 'table'); return; }
+      if (pk.id !== state.sel) selectBody(pk.id);
+      if (!state.bal.bodyOn) toggleBody(); else S3.placeBody(pk.id, 'pan');
+    } else if (!want && onPan) {
+      if (needArrest()) S3.placeBody(pk.id, 'pan'); else toggleBody();
+    } else S3.placeBody(pk.id, onPan ? 'pan' : 'table');
+  }
+};
+function handlePick(pk) {
+  if (pk.type === 'arrest') { if (state.wp !== 'scale') setWorkplace('scale'); toggleArrest(); }
+  else if (pk.type === 'w') { if (state.wp !== 'scale') setWorkplace('scale'); toggleWeight(pk.id); }
+  else if (pk.type === 'wp') setWorkplace(pk.id);
+  else if (pk.type === 'body') {
+    if (state.wp === 'scale') {
+      if (pk.id === state.sel) toggleBody();
+      else { selectBody(pk.id); if (state.bal.arrested) toggleBody(); }
+    } else selectBody(pk.id);
+  }
+}
+
+/* ===== ЖУРНАЛ ===== */
+const dispLen = mm => state.units === 'si' ? fx(mm / 1000, 5) : fx(mm, 2);
+const dispMass = g => state.units === 'si' ? fx(g / 1000, 5) : fx(g, 2);
+function renderLog() {
+  const si = state.units === 'si';
+  document.querySelectorAll('#unitSeg button').forEach(b => b.classList.toggle('on', b.dataset.u === state.units));
+  $('logBody').innerHTML = BODIES.map(B => {
+    const rows = buildRows(B.id), dd = state.data[B.id];
+    const head = '<th>№</th><th>m, ' + (si ? 'кг' : 'г') + '</th>' + B.dims.map(d => {
+      const have = INSTR && ['caliper', 'micrometer'].filter(i => dd.dims[d.k][i].length);
+      const sel = dd.sel[d.k];
+      const picker = have.length > 1 ? '<select class="mini" data-pick="' + B.id + ':' + d.k + '" aria-label="Прилад для ' + d.k + '">' + have.map(i => '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + INSTR[i].short + '</option>').join('') + '</select>' : (sel ? '<span class="insn">' + INSTR[sel].short + '</span>' : '');
+      return '<th>' + d.sym + ', ' + (si ? 'м' : 'мм') + picker + '</th>';
+    }).join('') + '<th></th>';
+    const cell = (v, f) => v === undefined ? '<td class="empty">—</td>' : '<td>' + f(v) + '</td>';
+    const body = rows.length ? rows.map(r => '<tr' + (r.complete ? '' : ' class="part"') + '><td>' + (r.i + 1) + '</td>' + cell(r.cells.m, dispMass) +
+      B.dims.map(d => cell(r.cells[d.k], dispLen)).join('') + '<td></td></tr>').join('') : '<tr><td colspan="' + (B.dims.length + 3) + '" class="empty">Вимірювань ще немає. Перейдіть на вкладку «Дослід».</td></tr>';
+    const full = rows.filter(r => r.complete).length;
+    return '<article class="card"><header class="ch"><h3>Таблиця ' + FORM[B.id].tab + 'а. ' + btitle(B) + '</h3><span class="tag ' + (full >= 3 ? 'ok' : '') + '">повних рядків: ' + full + '</span></header>' +
+      '<div class="tw"><table class="data"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<div class="rowbtn">' + B.dims.concat([{ k: 'm', name: 'масу', sym: 'm' }]).map(d => '<button class="btn sm ghost" data-del="' + B.id + ':' + d.k + '">Видалити останнє: ' + d.sym + '</button>').join('') + '</div></article>';
+  }).join('');
+}
+function delLast(bid, k) {
+  const dd = state.data[bid];
+  if (k === 'm') dd.mass.pop(); else { const s = seriesFor(bid, k); if (s.ins) dd.dims[k][s.ins].pop(); }
+  save(); renderLog(); renderBodyCards();
+}
+
+/* ===== ОБРОБКА ===== */
+function rowsSI(bid) {
+  const B = BODY(bid);
+  return buildRows(bid).filter(r => r.complete).map(r => {
+    const o = { m: r.cells.m / 1000 }; B.dims.forEach(d => { o[d.k] = r.cells[d.k] / 1000; }); return o;
+  });
+}
+function deltasSI(bid) {
+  const B = BODY(bid), o = { m: BALANCE.delta / 1000 };
+  B.dims.forEach(d => { const ins = state.data[bid].sel[d.k]; o[d.k] = (ins ? INSTR[ins].delta : 0.025) / 1000; });
+  return o;
+}
+const dimNum = (B, d) => d.sym;
+function renderCalc() {
+  const sel = $('alphaSel');
+  if (!sel.options.length) {
+    [0.9, 0.95, 0.98, 0.99].forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = fx(a, 2); sel.appendChild(o); });
+  }
+  sel.value = String(state.alpha);
+  const results = [];
+  const html = BODIES.map(B => {
+    const rows = rowsSI(B.id), tab = FORM[B.id].tab;
+    const head = '<header class="ch"><h3>Таблиця ' + tab + 'б. ' + btitle(B) + '</h3></header>';
+    if (rows.length < 2) {
+      results.push({ B, ok: false });
+      return '<article class="card">' + head + '<p class="muted">Для обробки потрібно щонайменше 2 повні рядки таблиці ' + tab + 'а (за методичкою — не менше 3). Зараз: ' + rows.length + '. Виконайте вимірювання на вкладці «Дослід».</p></article>';
+    }
+    const P = processBody(B.id, rows, deltasSI(B.id), state.alpha), n = P.n;
+    results.push({ B, ok: true, P });
+    const tr = rows.map((r, i) => '<tr><td>' + (i + 1) + '</td><td>' + fp(P.rho[i], 5) + '</td><td>' + fp(P.dev[i], 4) + '</td><td>' + fp(P.sq[i], 4) + '</td></tr>').join('');
+    const mt = matchMaterials(P.mean, P.tot);
+    const tri = P.terms.map(t => '(' + t.k + ': ' + fp(t.rel * 100, 3) + ' %)').join(', ');
+    const dl = deltasSI(B.id);
+    const dtxt = 'δm = ' + fx(BALANCE.delta, 3) + ' г' + B.dims.map(d => '; δ' + d.sym + ' = ' + fx(dl[d.k] * 1000, 3) + ' мм').join('');
+    const matHTML = mt.hit.length
+      ? 'У межах похибки збігається з: <b>' + mt.hit.map(m => m.n + (m.src === 'додатково' ? ' (довідково)' : '')).join(', ') + '</b>.'
+      : 'У таблиці немає речовини з такою густиною в межах похибки; найближча — ' + mt.near.n + '.';
+    return '<article class="card">' + head +
+      '<div class="calc2"><div class="tw"><table class="data"><thead><tr><th>№</th><th>ρ<sub>i</sub> = ' + FORM[B.id].f.replace('ρ = ', '') + ', кг/м³</th><th>Δρ<sub>i</sub> = |ρ̄ − ρ<sub>i</sub>|</th><th>(Δρ<sub>i</sub>)²</th></tr></thead><tbody>' + tr +
+      '<tr class="sum"><td>Σ</td><td>ρ̄ = ' + fp(P.mean, 5) + '</td><td></td><td>' + fp(P.sumsq, 4) + '</td></tr></tbody></table></div>' +
+      '<ol class="steps">' +
+      '<li>Середнє значення: ρ̄ = Σρ<sub>i</sub>/n = <b>' + fp(P.mean, 5) + '</b> кг/м³ (n = ' + n + ').</li>' +
+      '<li>Середня квадратична похибка середнього: S<sub>ρ</sub> = √[Σ(Δρ<sub>i</sub>)² / (n(n−1))] = <b>' + fp(P.S, 3) + '</b> кг/м³.</li>' +
+      '<li>Надійна ймовірність α = ' + fx(state.alpha, 2) + ', коефіцієнт Стьюдента t<sub>α,n</sub> = ' + fx(P.t, P.t < 1 ? 2 : 1) + '. Випадкова похибка Δρ = t·S<sub>ρ</sub> = <b>' + fp(P.rand, 3) + '</b> кг/м³.</li>' +
+      '<li>Приладові похибки: ' + dtxt + '. Систематична похибка δρ = ρ̄·√Σ(δx/x·k)² = <b>' + fp(P.sys, 3) + '</b> кг/м³. Внески: ' + tri + '.</li>' +
+      '<li>Загальна похибка: σ = √(δρ² + Δρ²) = <b>' + fp(P.tot, 3) + '</b> кг/м³.</li>' +
+      '<li>Відносна похибка: E = σ/ρ̄ · 100 % = <b>' + fp(P.E, 2) + ' %</b>.</li></ol></div>' +
+      '<p class="final">ρ = (' + P.res.v + ' ± ' + P.res.e + ')·10³ кг/м³, α = ' + fx(state.alpha, 2) + ', E = ' + fx(P.E, P.E < 10 ? 1 : 0) + ' %</p>' +
+      '<p class="concl">' + matHTML + ' Довідкові значення: Додаток 7 методички; рядки «довідково» — загальновідомі інтервали (їх у Додатку 7 немає).</p>' +
+      (P.n < 3 ? '<p class="note warn">n = ' + P.n + ': випадкову похибку знайдено за малою вибіркою, зробіть не менше 3 вимірювань.</p>' : '') +
+      '</article>';
+  }).join('');
+  $('calcBody').innerHTML = html;
+  $('calcSummary').innerHTML = '<div class="sumgrid">' + results.map(r => r.ok
+    ? '<div class="stile"><span class="sl">' + r.B.short + ' №' + (r.B.spec + 1) + '</span><span class="sv">' + r.P.res.v + ' ± ' + r.P.res.e + '</span><span class="su">·10³ кг/м³ · E = ' + fx(r.P.E, r.P.E < 10 ? 1 : 0) + ' %</span></div>'
+    : '<div class="stile off"><span class="sl">' + r.B.short + ' №' + (r.B.spec + 1) + '</span><span class="sv">—</span><span class="su">недостатньо даних</span></div>').join('') + '</div>';
+}
+
+/* ===== ТЕОРІЯ: таблиці ===== */
+function renderTheoryTables() {
+  if (!$('tblStud')) return;
+  const as = [0.9, 0.95, 0.98, 0.99], ns = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 30];
+  $('tblStud').innerHTML = '<thead><tr><th>n \\ α</th>' + as.map(a => '<th>' + fx(a, 2) + '</th>').join('') + '</tr></thead><tbody>' +
+    ns.map(n => '<tr><td>' + n + '</td>' + as.map(a => '<td>' + fx(tCoef(a, n), tCoef(a, n) < 1 ? 2 : 1) + '</td>').join('') + '</tr>').join('') + '</tbody>';
+  $('tblRho').innerHTML = '<thead><tr><th>Речовина</th><th>ρ, 10³ кг/м³</th><th>Джерело</th></tr></thead><tbody>' + MATERIALS.map(m => {
+    const mid = (m.lo + m.hi) / 2 / 1000;
+    const t = m.src === 'Додаток 7' ? fx(mid, mid >= 10 ? 1 : 2) : fx(m.lo / 1000, 2) + '–' + fx(m.hi / 1000, 2);
+    return '<tr><td>' + m.n + '</td><td>' + t + '</td><td>' + (m.src === 'Додаток 7' ? 'Додаток 7' : '<i>додатково</i>') + '</td></tr>';
+  }).join('') + '</tbody>';
+}
+
+/* ===== ВКЛАДКИ ===== */
+function setTab(t) {
+  state.tab = t;
+  ['exp', 'log', 'calc', 'theory'].forEach(k => { $('tab-' + k).hidden = k !== t; });
+  document.querySelectorAll('#tabs button').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  S3.setActive(t === 'exp');
+  if (t === 'log') renderLog(); if (t === 'calc') renderCalc(); if (t === 'exp') { renderBodyCards(); drawLoupe(); }
+  try { history.replaceState(null, '', '#' + { exp: 'doslid', log: 'zhurnal', calc: 'obrobka', theory: 'teoriya' }[t]); } catch (e) {}
+}
+
+/* ===== ВАРІАНТ ===== */
+function applyVariant(v, keep) {
+  state.variant = v; state.tru = makeVariant(v);
+  if (!keep) { state.data = emptyData(); state.stash = {}; }
+  state.bal.on.forEach(i => S3.setWeight(i, false)); state.bal.on.clear(); state.bal.bodyOn = false; state.bal.arrested = true; S3.setArrest(true);
+  S3.rebuild(state.tru.dims); updateLoads();
+  state.sel = state.sel || 'box'; state.inst.dim = null;
+  if (isInst(state.wp)) setupMeasure();
+  save(); renderBodyCards(); updatePanel();
+}
+
+/* ===== ІНІЦІАЛІЗАЦІЯ ===== */
+function initUI() {
+  $('specSeg').onclick = e => { const b = e.target.closest('button[data-s]'); if (b) switchSpec(state.sel, +b.dataset.s); };
+  // кнопки гир
+  $('wGrid').innerHTML = WEIGHT_VALUES.map((v, i) => '<button class="wbtn' + (v < 1 ? ' mg' : '') + '" data-i="' + i + '">' + wLabel(v) + '</button>').join('');
+  renderTheoryTables();
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setTab(b.dataset.t); });
+  $('wpSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setWorkplace(b.dataset.w); });
+  $('bodyCards').addEventListener('click', e => { const b = e.target.closest('.bcard'); if (b) selectBody(b.dataset.b); });
+  $('wGrid').addEventListener('click', e => { const b = e.target.closest('button'); if (b) toggleWeight(Number(b.dataset.i)); });
+  $('btnArrest').onclick = toggleArrest; $('btnPan').onclick = toggleBody; $('btnMass').onclick = submitMass;
+  $('massIn').addEventListener('keydown', e => { if (e.key === 'Enter') submitMass(); });
+  $('readIn').addEventListener('keydown', e => { if (e.key === 'Enter') submitReading(); });
+  $('btnRead').onclick = submitReading;
+  $('gapRange').addEventListener('input', e => requestGap(Number(e.target.value)));
+  $('stepBtns').addEventListener('click', e => { const b = e.target.closest('button'); if (b) requestGap(state.inst.gap + Number(b.dataset.s)); });
+  $('btnClose').onclick = () => requestGap(isInner() ? INSTR[state.wp].max : 0);
+  $('btnOpen').onclick = () => { state.inst.clamped = false; requestGap(openGap(state.wp, state.inst.size)); };
+  $('btnRelocate').onclick = () => {
+    if (!state.inst.clamped) return fb('readFb', 'Спершу затисніть тіло.', 'bad');
+    drawSample(); state.inst.gap = state.inst.sampleQ; applyGap(); drawLoupe(); fb('readFb', 'Тіло повернуто іншим боком: виміряйте в новому місці.', '');
+  };
+  $('btnTip').onclick = () => {
+    if (!state.inst.clamped) return fb('readFb', 'Підказка з’явиться, коли тіло затиснуто.', 'bad');
+    state.inst.tip = true; drawLoupe(); fb('readFb', tipText(), 'tip');
+  };
+  $('dimChips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const B = BODY(state.sel), d = B.dims.find(x => x.k === b.dataset.d);
+    if (!canMeasure(state.wp, d, B.id)) return toast(whyNot(state.wp, d, B.id), 'warn');
+    state.inst.dim = d.k; setupMeasure(); renderDimChips(); drawLoupe();
+  });
+  $('chkAuto').onchange = e => { state.auto = e.target.checked; };
+  $('chkHint').onchange = e => { state.hint = e.target.checked; $('balHint').hidden = !state.hint; drawLoupe(); };
+  $('btnVariant').onclick = () => {
+    let v = Math.round(Number($('variant').value)); if (!(v >= 1 && v <= 99)) v = 1;
+    $('variant').value = v; applyVariant(v, false); toast('Варіант ' + v + ': нові розміри тіл. Журнал очищено.', 'ok');
+  };
+  $('unitSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { state.units = b.dataset.u; save(); renderLog(); } });
+  $('logBody').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { const p = b.dataset.del.split(':'); delLast(p[0], p[1]); } });
+  $('logBody').addEventListener('change', e => {
+    const s = e.target.closest('[data-pick]'); if (!s) return;
+    const p = s.dataset.pick.split(':'); state.data[p[0]].sel[p[1]] = s.value; save(); renderLog();
+  });
+  $('btnClear').onclick = () => { $('clearAsk').hidden = false; $('btnClear').hidden = true; };
+  $('clearNo').onclick = () => { $('clearAsk').hidden = true; $('btnClear').hidden = false; };
+  $('clearYes').onclick = () => { state.data = emptyData(); save(); renderLog(); renderBodyCards(); $('clearAsk').hidden = true; $('btnClear').hidden = false; };
+  $('alphaSel').addEventListener('change', e => { state.alpha = Number(e.target.value); save(); renderCalc(); });
+  $('btnPan').onclick = () => { S3.panMode = !S3.panMode; $('btnPan').setAttribute('aria-pressed', S3.panMode); $('gl').style.cursor = S3.panMode ? 'move' : 'default'; };
+  $('btnHome').onclick = () => S3.fly(state.wp);
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setWorkplace(b.dataset.view)));
+  const lp = $('loupe'); let ld = null;
+  lp.addEventListener('pointerdown', e => { if (!isInst(state.wp)) return; lp.setPointerCapture(e.pointerId); ld = { x: e.clientX, g: state.inst.gap }; });
+  lp.addEventListener('pointermove', e => {
+    if (!ld) return;
+    const W = lp.getBoundingClientRect().width, k = (e.shiftKey ? 0.2 : 1) * (e.clientX - ld.x);
+    if (state.wp === 'caliper') requestGap(ld.g - k / ((W - 24) / 25)); else requestGap(ld.g + k / 38);
+  });
+  const lpUp = () => { ld = null; };
+  lp.addEventListener('pointerup', lpUp); lp.addEventListener('pointercancel', lpUp);
+  lp.addEventListener('wheel', e => { if (!isInst(state.wp)) return; e.preventDefault(); requestGap(state.inst.gap + (e.deltaY < 0 ? 1 : -1) * INSTR[state.wp].step * (e.shiftKey ? 1 : 5)); }, { passive: false });
+  lp.style.cursor = 'ew-resize'; lp.style.touchAction = 'none';
+  window.addEventListener('resize', drawLoupe);
+}
+
+/* ===== ЗАПУСК ===== */
+function boot() {
+  const had = load();
+  if (!had) state.data = emptyData();
+  BODIES.forEach(B => applySpec(B.id, state.spec[B.id]));
+  state.tru = makeVariant(state.variant);
+  // відновлення структури (на випадок змін)
+  const fresh = emptyData(); BODIES.forEach(B => { if (!state.data[B.id]) state.data[B.id] = fresh[B.id]; B.dims.forEach(d => { if (!state.data[B.id].dims[d.k]) state.data[B.id].dims[d.k] = { caliper: [], micrometer: [] }; }); });
+  $('variant').value = state.variant;
+  initUI(); renderSpecRow();
+  S3.init($('gl'), $('stage'), state.tru.dims);
+  S3.onPick = handlePick;
+  let lastTxt = 0;
+  S3.onFrame = () => {
+    if (state.wp === 'scale') {
+      drawLoupe();
+      const now = performance.now();
+      if (now - lastTxt > 120) {
+        lastTxt = now;
+        const dv = S3.pointerDiv(); $('ptrTxt').textContent = 'Стрілка: ' + (dv >= 0 ? '+' : '−') + fx(Math.abs(dv), 1) + ' под.';
+        const d = updateLoadsPeek(), mg = Math.abs(d) * BALANCE.mgPerDiv;
+        $('balHint').textContent = !state.bal.bodyOn ? 'Покладіть тіло на ліву шальку.' :
+          (mg <= BALANCE.tol * 1000 ? 'Терези врівноважені: можна записувати масу.' :
+            'Різниця мас ' + (d > 0 ? 'ліва > права' : 'права > ліва') + ' ≈ ' + fx(mg, 0) + ' мг; рівновага при ' + (d > 0 ? '+' : '−') + fx(Math.abs(d), 1) + ' под.');
+        $('balHint').className = 'note' + (state.bal.bodyOn && mg <= BALANCE.tol * 1000 ? ' good' : '');
+      }
+    }
+  };
+  const h = location.hash.replace('#', '');
+  const map = { zhurnal: 'log', obrobka: 'calc', teoriya: 'theory' };
+  setTab(map[h] || 'exp');
+  updatePanel(); drawLoupe(); updateLoads();
+  S3.setArrest(true);
+}
+
+boot();
+</script>
+
+</body></html>
